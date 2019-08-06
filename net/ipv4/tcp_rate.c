@@ -106,6 +106,7 @@ void tcp_rate_skb_delivered(struct sock *sk, struct sk_buff *skb,
 	    after(scb->tx.delivered, rs->prior_delivered)) {
 		rs->prior_delivered  = scb->tx.delivered;
 		rs->prior_mstamp     = scb->tx.delivered_mstamp;
+		rs->prior_lost	     = scb->tx.lost;
 		rs->is_app_limited   = scb->tx.is_app_limited;
 		rs->is_retrans	     = scb->sacked & TCPCB_RETRANS;
 		rs->tx_in_flight     = scb->tx.in_flight;
@@ -156,6 +157,7 @@ void tcp_rate_gen(struct sock *sk, u32 delivered, u32 lost,
 		return;
 	}
 	rs->delivered   = tp->delivered - rs->prior_delivered;
+	rs->lost        = tp->lost - rs->prior_lost;
 
 	/* Model sending data and receiving ACKs as separate pipeline phases
 	 * for a window. Usually the ACK phase is longer, but with ACK
