@@ -3773,6 +3773,8 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 
 	prior_fack = tcp_is_sack(tp) ? tcp_highest_sack_seq(tp) : tp->snd_una;
 	rs.prior_in_flight = tcp_packets_in_flight(tp);
+	rs.is_acking_tlp_retrans_seq = tcp_has_tlp_probe(tp) &&
+		(ack == tp->tlp_high_seq);
 	rs.is_ece = (flag & FLAG_ECE) != 0;
 	tcp_rate_check_app_limited(sk);
 

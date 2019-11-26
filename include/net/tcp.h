@@ -1077,6 +1077,7 @@ struct rate_sample {
 	u32  acked_sacked;	/* number of packets newly (S)ACKed upon ACK */
 	u32  prior_in_flight;	/* in flight before this ACK */
 	bool is_ece;
+	bool is_acking_tlp_retrans_seq;
 	bool is_app_limited;	/* is sample from packet with bubble in pipe? */
 	bool is_retrans;	/* is sample from retransmission? */
 	bool is_ack_delayed;	/* is this (likely) a delayed ACK? */
@@ -1291,6 +1292,11 @@ static inline __u32 tcp_max_tso_deferred_mss(const struct tcp_sock *tp)
 static inline u32 tcp_wnd_end(const struct tcp_sock *tp)
 {
 	return tp->snd_una + tp->snd_wnd;
+}
+
+static inline bool tcp_has_tlp_probe(const struct tcp_sock *tp)
+{
+	return tp->tlp_high_seq != 0;
 }
 
 /* We follow the spirit of RFC2861 to validate cwnd but implement a more
