@@ -1048,7 +1048,7 @@ enum tcp_ca_ack_event_flags {
 #define TCP_CONG_NEEDS_ECN	0x2
 #define TCP_CONG_MASK	(TCP_CONG_NON_RESTRICTED | TCP_CONG_NEEDS_ECN)
 
-union tcp_cc_info;
+#include <uapi/linux/inet_diag.h>
 
 struct ack_sample {
 	u32 pkts_acked;
@@ -1071,6 +1071,7 @@ struct rate_sample {
 	u32 tx_in_flight;	/* packets in flight at starting timestamp */
 	s32  lost;		/* number of packets lost over interval */
 	s32  delivered;		/* number of packets delivered over interval */
+	s32  delivered_ce;	/* number of CE packets delivered over interval */
 	long interval_us;	/* time for tp->delivered to incr "delivered" */
 	u32 snd_interval_us;	/* snd interval for delivered packets */
 	u32 rcv_interval_us;	/* rcv interval for delivered packets */
