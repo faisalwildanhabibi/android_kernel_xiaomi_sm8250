@@ -2382,6 +2382,10 @@ static struct tcp_congestion_ops tcp_bbr_cong_ops __read_mostly = {
 	.set_state	= bbr_set_state,
 };
 
+static int __init bbr_register(void)
+{
+	BUILD_BUG_ON(sizeof(struct bbr) > ICSK_CA_PRIV_SIZE);
+
 	return tcp_register_congestion_control(&tcp_bbr_cong_ops);
 }
 
