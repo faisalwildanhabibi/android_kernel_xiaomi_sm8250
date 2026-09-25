@@ -357,13 +357,22 @@ build_target() {
     echo "[*] Ensuring Baseband-guard is disabled..."
     scripts/config --file "${OUT_DIR}/.config" -d BBG -d BPF_PRELOAD -d BPF_PRELOAD_UMD
 
-    # 2. KernelSU configurations
+    # 2. KernelSU & SuSFS configurations (ISO/IEC 25010 & 27001 Hardened Stealth Mode)
     if [ "$ENABLE_KSU" -eq 1 ]; then
-        echo "[*] Injecting KernelSU & SUSFS configurations..."
+        echo "[*] Injecting KernelSU & SuSFS configurations (Hardened Stealth Mode)..."
         scripts/config --file "${OUT_DIR}/.config" \
             -e KSU \
             -e THREAD_INFO_IN_TASK \
             -e KSU_SUSFS \
+            -e KSU_SUSFS_SUS_PATH \
+            -e KSU_SUSFS_SUS_MOUNT \
+            -e KSU_SUSFS_SUS_KSTAT \
+            -e KSU_SUSFS_SPOOF_UNAME \
+            -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+            -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+            -e KSU_SUSFS_OPEN_REDIRECT \
+            -e KSU_SUSFS_SUS_MAP \
+            -d KSU_SUSFS_ENABLE_LOG \
             -d CFI \
             -d CFI_CLANG \
             -d CFI_CLANG_SHADOW \
