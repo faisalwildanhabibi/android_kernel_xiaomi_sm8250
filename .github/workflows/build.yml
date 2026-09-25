@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       device:
-        description: 'Target Device Code (Device Name)'
+        description: 'Target Device Code'
         required: true
         default: 'alioth'
         type: choice
         options:
           - alioth
       ksu:
-        description: 'Enable KernelSU (ReSukiSU)'
+        description: 'Enable KernelSU (ReSukiSu)'
         required: true
         type: boolean
         default: true
@@ -28,16 +28,10 @@ on:
         required: true
         type: boolean
         default: false
-  push:
-    branches:
-      - 'seventeen-sukisu-susfs'
-    paths:
-      - '.github/workflows/build.yml'
-      - '.trigger_build'
 
 jobs:
   build-kernel:
-    name: Build Pure ${{ github.event.inputs.device || 'alioth' }} | KSU:${{ github.event.inputs.ksu != false }} | OS:${{ github.event.inputs.target_os || 'aosp' }}
+    name: Build Pure Kernel (alioth)
     runs-on: ubuntu-latest
     
     steps:
@@ -57,9 +51,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ccache_mikernel
-        key: ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device || 'alioth' }}-${{ github.run_id }}
+        key: ${{ runner.os }}-pure-kernel-ccache-alioth-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device || 'alioth' }}-
+          ${{ runner.os }}-pure-kernel-ccache-alioth-
           ${{ runner.os }}-pure-kernel-ccache-
 
     - name: Cache zyc-clang 16 Toolchain (ISO/IEC 12207 Reproducibility)
@@ -80,13 +74,7 @@ jobs:
 
     - name: Pre-Flight: Validate Defconfig Compatibility Matrix (ISO/IEC 29119)
       run: |
-        DEV="${{ github.event.inputs.device }}"
-        [ -z "$DEV" ] && DEV="alioth"
-        if [ -f "arch/arm64/configs/${DEV}_defconfig" ]; then
-          python3 scripts/test_kernel_compatibility.py "arch/arm64/configs/${DEV}_defconfig"
-        elif [ -f "arch/arm64/configs/vendor/xiaomi/${DEV}.config" ]; then
-          python3 scripts/test_kernel_compatibility.py arch/arm64/configs/vendor/kona-perf_defconfig
-        fi
+        python3 scripts/test_kernel_compatibility.py arch/arm64/configs/vendor/kona-perf_defconfig
 
     - name: Configure ccache
       run: |
