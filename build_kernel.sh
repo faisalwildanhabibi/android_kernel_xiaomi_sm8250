@@ -381,8 +381,8 @@ build_target() {
         -e EROFS_FS_PCPU_KTHREAD \
         -e EROFS_FS_PCPU_KTHREAD_HIPRI
 
-    # 2.3 Universal Interoperability & Android 14/15/17 Optimizations
-    echo "[*] Injecting Universal Interoperability & Performance Optimizations..."
+    # 2.3 Universal Interoperability & Low-Risk Performance Optimizations
+    echo "[*] Injecting Low-Risk Performance & Network Optimizations (Westwood, BBR, ZRAM, ThinLTO)..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e USER_NS \
         -e PID_NS \
@@ -393,7 +393,19 @@ build_target() {
         -d F2FS_UNFAIR_RWSEM \
         -e KPROBES \
         -e HAVE_KPROBES \
-        -e KPROBE_EVENTS
+        -e KPROBE_EVENTS \
+        -e TCP_CONG_ADVANCED \
+        -e TCP_CONG_WESTWOOD \
+        -e TCP_CONG_BBR \
+        -e DEFAULT_WESTWOOD \
+        --set-str DEFAULT_TCP_CONG "westwood" \
+        -e ZRAM_WRITEBACK \
+        -e CRYPTO_ZSTD \
+        -e ZRAM_DEF_COMP_ZSTD \
+        --set-str ZRAM_DEF_COMP "zstd" \
+        -d SLUB_DEBUG_ON \
+        -d PROVE_LOCKING \
+        -d LOCKDEP
 
     # 3. MIUI configurations
     if [ "$OS_TYPE" == "miui" ]; then
