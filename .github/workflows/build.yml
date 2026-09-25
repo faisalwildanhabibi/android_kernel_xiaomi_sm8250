@@ -10,41 +10,34 @@ on:
         type: choice
         options:
           - alioth
-          - apollo
-          - cas
-          - cmi
-          - dagu
-          - elish
-          - enuma
-          - lmi
-          - munch
-          - pipa
-          - psyche
-          - thyme
-          - umi
       ksu:
         description: 'Enable KernelSU (ReSukiSU)'
         required: true
         type: boolean
         default: true
       target_os:
-        description: 'Target OS ()'
+        description: 'Target OS'
         required: true
         type: choice
         default: 'aosp'
         options:
           - aosp
-          - miui
           - both
       droidspaces:
         description: 'Enable DroidSpaces support'
         required: true
         type: boolean
         default: false
+  push:
+    branches:
+      - 'seventeen-sukisu-susfs'
+    paths:
+      - '.github/workflows/build.yml'
+      - '.trigger_build'
 
 jobs:
   build-kernel:
-    name: Build Pure ${{ github.event.inputs.device }} | KSU:${{ github.event.inputs.ksu }} | OS:${{ github.event.inputs.target_os }}
+    name: Build Pure ${{ github.event.inputs.device || 'alioth' }} | KSU:${{ github.event.inputs.ksu != false }} | OS:${{ github.event.inputs.target_os || 'aosp' }}
     runs-on: ubuntu-latest
     
     steps:
@@ -64,9 +57,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ccache_mikernel
-        key: ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device }}-${{ github.run_id }}
+        key: ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device || 'alioth' }}-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device }}-
+          ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device || 'alioth' }}-
           ${{ runner.os }}-pure-kernel-ccache-
 
     - name: Cache zyc-clang 16 Toolchain (ISO/IEC 12207 Reproducibility)
@@ -87,9 +80,11 @@ jobs:
 
     - name: Pre-Flight: Validate Defconfig Compatibility Matrix (ISO/IEC 29119)
       run: |
-        if [ -f "arch/arm64/configs/${{ github.event.inputs.device }}_defconfig" ]; then
-          python3 scripts/test_kernel_compatibility.py arch/arm64/configs/${{ github.event.inputs.device }}_defconfig
-        elif [ -f "arch/arm64/configs/vendor/xiaomi/${{ github.event.inputs.device }}.config" ]; then
+        DEV="${{ github.event.inputs.device }}"
+        [ -z "$DEV" ] && DEV="alioth"
+        if [ -f "arch/arm64/configs/${DEV}_defconfig" ]; then
+          python3 scripts/test_kernel_compatibility.py "arch/arm64/configs/${DEV}_defconfig"
+        elif [ -f "arch/arm64/configs/vendor/xiaomi/${DEV}.config" ]; then
           python3 scripts/test_kernel_compatibility.py arch/arm64/configs/vendor/kona-perf_defconfig
         fi
 
@@ -102,15 +97,18 @@ jobs:
       run: |
         chmod +x build_kernel.sh
         
-        ARGS="${{ github.event.inputs.device }}"
+        DEV="${{ github.event.inputs.device }}"
+        [ -z "$DEV" ] && DEV="alioth"
         
-        if [ "${{ github.event.inputs.ksu }}" == "true" ]; then
+        ARGS="$DEV"
+        
+        if [ "${{ github.event.inputs.ksu }}" != "false" ]; then
           ARGS="$ARGS ksu"
         fi
         
-        if [ "${{ github.event.inputs.target_os }}" != "both" ]; then
-          ARGS="$ARGS ${{ github.event.inputs.target_os }}"
-        fi
+        OS_FLAG="${{ github.event.inputs.target_os }}"
+        [ -z "$OS_FLAG" ] && OS_FLAG="aosp"
+        ARGS="$ARGS $OS_FLAG"
 
         if [ "${{ github.event.inputs.droidspaces }}" == "true" ]; then
           ARGS="$ARGS droidspaces"
@@ -130,15 +128,15 @@ jobs:
 
     - name: ccache Statistics & Performance Audit (ISO/IEC 25010)
       run: |
-        echo "###  ccache Performance Audit" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "### ccache Performance Audit" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
         ccache -s | tee -a $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
 
     - name: Cryptographic Checksum & Release Integrity (ISO/IEC 27001 & SLSA)
       run: |
         sha256sum APTKernel_Pure_*.zip > SHA256SUMS
-        echo "###  ISO/IEC 27001 Cryptographic Release Integrity" >> $GITHUB_STEP_SUMMARY
+        echo "### ISO/IEC 27001 Cryptographic Release Integrity" >> $GITHUB_STEP_SUMMARY
         echo "| Artifact | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
         echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
         while read -r sum file; do
@@ -148,7 +146,7 @@ jobs:
     - name: Upload Pure Flashable ZIP & SHA256SUMS
       uses: actions/upload-artifact@v4
       with:
-        name: APTKernel-Pure-${{ github.event.inputs.device }}-${{ github.event.inputs.target_os }}-${{ github.run_id }}
+        name: APTKernel-Pure-alioth-aosp-${{ github.run_id }}
         path: |
           APTKernel_Pure_*.zip
           SHA256SUMS
