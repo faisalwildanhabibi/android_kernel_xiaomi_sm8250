@@ -27,8 +27,8 @@ if [ ! -f "$DEFCONFIG_PATH" ] && [ ! -f "$PIXELOS_CONFIG" ]; then
     exit 1
 fi
 
-ENABLE_KSU=1
-TARGET_OS="aosp"
+ENABLE_KSU=0
+TARGET_OS="both"
 
 shift
 # Parse remaining arguments loosely
@@ -96,18 +96,62 @@ echo "[+] Baseband-guard setup finished."
 echo "==========================================="
 
 # ==========================================
-# AnyKernel3 Setup
+# AnyKernel3 Setup (Pure Kernel Replacement)
 # ==========================================
 echo "==========================================="
-echo " [*] Initializing AnyKernel3 Workspace"
+echo " [*] Initializing Pure AnyKernel3 Workspace"
 echo "==========================================="
 rm -rf anykernel
-echo "[*] Cloning AnyKernel3..."
-git clone https://github.com/AstideLabs/AnyKernel3 -b kona --single-branch --depth=1 anykernel
+echo "[*] Cloning official AnyKernel3..."
+git clone https://github.com/osm0sis/AnyKernel3 -b master --single-branch --depth=1 anykernel
 echo "[+] AnyKernel3 cloned successfully."
-echo "[*] Adjusting AnyKernel3..."
-sed -i "s/^device\.name1=.*/device.name1=${DEVICE_NAME}/" anykernel/anykernel.sh
-echo "[*] AnyKernel3 adjusted successfully."
+
+echo "[*] Generating pure kernel installer script (anykernel.sh)..."
+cat << 'EOF' > anykernel/anykernel.sh
+### AnyKernel3 Ramdisk Mod Script
+## osm0sis @ xda-developers
+
+### AnyKernel setup
+# global properties
+properties() { '
+kernel.string=PixelOS Kernel (ReSukiSU + SuSFS) for Poco F3 (alioth)
+do.devicecheck=1
+do.modules=0
+do.systemless=1
+do.cleanup=1
+do.cleanuponabort=0
+device.name1=alioth
+device.name2=aliothin
+device.name3=POCO F3
+device.name4=Redmi K40
+device.name5=Mi 11X
+supported.versions=
+supported.patchlevels=
+supported.vendorpatchlevels=
+'; } # end properties
+
+### AnyKernel install
+# boot shell variables
+BLOCK=boot;
+IS_SLOT_DEVICE=auto;
+RAMDISK_COMPRESSION=auto;
+PATCH_VBMETA_FLAG=auto;
+NO_BLOCK_DISPLAY=1;
+
+# import functions/variables and setup patching - see for reference (DO NOT REMOVE)
+. tools/ak3-core.sh;
+
+# boot install (Pure kernel replacement, no other components touched)
+split_boot;
+
+flash_boot;
+
+if [ -f $AKHOME/dtbo.img ]; then
+    flash_generic dtbo;
+fi;
+## end boot install
+EOF
+echo "[*] Pure AnyKernel3 installer configured successfully."
 echo "==========================================="
 
 # ==========================================
@@ -287,26 +331,23 @@ build_target() {
         echo "[+] $OS_TYPE Build Successful!"
         echo "[+] Kernel Image path: ${OUT_DIR}/arch/arm64/boot/Image"
 
-        echo "[*] Packaging to AnyKernel3 ($OS_TYPE)..."
-        # 确保独立打包：清空现有的 kernels 目录
-        rm -rf anykernel/kernels/*
-        mkdir -p "anykernel/kernels/${OS_TYPE}/"
+        echo "[*] Packaging pure kernel Image and DTB into AnyKernel3 ($OS_TYPE)..."
+        rm -f anykernel/Image anykernel/dtb anykernel/dtbo.img
         
-        cp "${OUT_DIR}/arch/arm64/boot/Image" "anykernel/kernels/${OS_TYPE}/"
-        cp "${OUT_DIR}/arch/arm64/boot/dtb" "anykernel/kernels/${OS_TYPE}/"
+        cp "${OUT_DIR}/arch/arm64/boot/Image" anykernel/Image
+        cp "${OUT_DIR}/arch/arm64/boot/dtb" anykernel/dtb
         
         if [ -f "${OUT_DIR}/arch/arm64/boot/dtbo.img" ]; then
-            cp "${OUT_DIR}/arch/arm64/boot/dtbo.img" "anykernel/kernels/${OS_TYPE}/"
+            cp "${OUT_DIR}/arch/arm64/boot/dtbo.img" anykernel/dtbo.img
         fi
         
-        # 确定 ZIP 文件名
-        local KSU_ZIP_STR="NoKernelSU"
+        local KSU_ZIP_STR="Vanilla"
         if [ "$ENABLE_KSU" -eq 1 ]; then
             KSU_ZIP_STR="ReSukiSU-SuSFS"
         fi
         local GIT_COMMIT_ID=$(git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
         local OS_UPPER=$(echo "$OS_TYPE" | tr '[:lower:]' '[:upper:]')
-        local ZIP_FILENAME="APTKernel_${OS_UPPER}_${DEVICE_NAME}_${KSU_ZIP_STR}_$(date +'%Y%m%d_%H%M%S')_anykernel3_${GIT_COMMIT_ID}.zip"
+        local ZIP_FILENAME="PixelOS_${DEVICE_NAME}_${KSU_ZIP_STR}_$(date +'%Y%m%d_%H%M%S')_anykernel3_${GIT_COMMIT_ID}.zip"
         
         echo "[*] Zipping $ZIP_FILENAME ..."
         pushd anykernel > /dev/null
@@ -314,7 +355,7 @@ build_target() {
         mv "$ZIP_FILENAME" ../
         popd > /dev/null
         
-        echo "[+] $OS_TYPE kernel binaries successfully packed into: $ZIP_FILENAME"
+        echo "[+] Pure kernel flashable package created: $ZIP_FILENAME"
     else
         echo "[-] $OS_TYPE Build Failed. Kernel Image not found."
         exit 1

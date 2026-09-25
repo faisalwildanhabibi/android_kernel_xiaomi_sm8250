@@ -82,5 +82,5 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: PixelOS-Alioth-Kernel-${{ github.event.inputs.ksu != false && 'ReSukiSU-SuSFS' || 'Vanilla' }}-${{ github.run_id }}
-        path: APTKernel_*.zip
+        path: PixelOS_*.zip
         compression-level: 0
