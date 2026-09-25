@@ -381,8 +381,8 @@ build_target() {
         -e EROFS_FS_PCPU_KTHREAD \
         -e EROFS_FS_PCPU_KTHREAD_HIPRI
 
-    # 2.3 Universal Interoperability & Low-Risk Performance Optimizations
-    echo "[*] Injecting Low-Risk Performance & Network Optimizations (Westwood, BBR, ZRAM, ThinLTO)..."
+    # 2.3 Comprehensive Zero/Low-Risk Performance, Battery & Android 17 Optimizations
+    echo "[*] Injecting Comprehensive Zero/Low-Risk Performance & Battery Optimizations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e USER_NS \
         -e PID_NS \
@@ -399,13 +399,20 @@ build_target() {
         -e TCP_CONG_BBR \
         -e DEFAULT_WESTWOOD \
         --set-str DEFAULT_TCP_CONG "westwood" \
+        -e TCP_FASTOPEN \
+        -e TCP_FASTOPEN_COOKIE_CHECK \
+        -e BPF_JIT \
+        -e BPF_JIT_ALWAYS_ON \
         -e ZRAM_WRITEBACK \
         -e CRYPTO_ZSTD \
         -e ZRAM_DEF_COMP_ZSTD \
         --set-str ZRAM_DEF_COMP "zstd" \
+        -e ARM64_4K_PAGES \
         -d SLUB_DEBUG_ON \
         -d PROVE_LOCKING \
-        -d LOCKDEP
+        -d LOCKDEP \
+        -d DEBUG_PAGEALLOC \
+        -d PAGE_OWNER
 
     # 3. MIUI configurations
     if [ "$OS_TYPE" == "miui" ]; then
