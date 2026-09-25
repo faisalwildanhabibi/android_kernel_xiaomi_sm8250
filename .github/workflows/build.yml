@@ -1,4 +1,4 @@
-name: Build Pure alioth Kernel
+name: Build Kernel
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ on:
         default: 'false'
   push:
     branches:
-      - seventeen-sukisu-susfs
+      - 'seventeen-sukisu-susfs'
     paths:
       - 'build_kernel.sh'
       - 'anykernel_template.sh'
@@ -30,27 +30,27 @@ on:
       - 'fs/susfs.c'
       - 'include/linux/susfs.h'
       - '.github/workflows/build.yml'
-      - '.trigger'
+      - '.trigger_ci'
 
 jobs:
   build-kernel:
-    name: Build Pure alioth Kernel
+    name: "Build Pure Kernel (alioth)"
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout Repository
+    - name: "Checkout Repository"
       uses: actions/checkout@v4
       with:
         fetch-depth: 1
 
-    - name: Set up Environment (ISO/IEC 12207 Primitives)
+    - name: "Set up Environment (ISO/IEC 12207 Primitives)"
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
           bc bison build-essential ccache curl flex gawk git gnupg \
           libelf-dev libncurses-dev libssl-dev lzop python3 rsync zip zlib1g-dev
 
-    - name: Cache ccache (ISO/IEC 25010 Efficiency)
+    - name: "Cache ccache (ISO/IEC 25010 Efficiency)"
       uses: actions/cache@v4
       with:
         path: ~/.cache/ccache_mikernel
@@ -59,14 +59,14 @@ jobs:
           ${{ runner.os }}-pure-kernel-ccache-alioth-
           ${{ runner.os }}-pure-kernel-ccache-
 
-    - name: Cache zyc-clang 16 Toolchain (ISO/IEC 12207 Reproducibility)
+    - name: "Cache zyc-clang 16 Toolchain (ISO/IEC 12207 Reproducibility)"
       id: cache-clang
       uses: actions/cache@v4
       with:
         path: ~/zyc-clang
         key: zyc-clang-16.0.6-20260807
 
-    - name: Setup zyc-clang 16 Toolchain
+    - name: "Setup zyc-clang 16 Toolchain"
       if: steps.cache-clang.outputs.cache-hit != 'true'
       run: |
         mkdir -p $HOME/zyc-clang
@@ -75,16 +75,16 @@ jobs:
         tar -zxf Clang-16.0.6-20260807.tar.gz
         rm -f Clang-16.0.6-20260807.tar.gz
 
-    - name: Pre-Flight: Validate Defconfig Compatibility Matrix (ISO/IEC 29119)
+    - name: "Pre-Flight: Validate Defconfig Compatibility Matrix (ISO/IEC 29119)"
       run: |
         python3 scripts/test_kernel_compatibility.py arch/arm64/configs/vendor/kona-perf_defconfig
 
-    - name: Configure ccache
+    - name: "Configure ccache"
       run: |
         ccache -M 5G
         ccache -z
 
-    - name: Run Build Script
+    - name: "Run Build Script"
       run: |
         chmod +x build_kernel.sh
         
@@ -114,7 +114,7 @@ jobs:
         echo "Executing command: ./build_kernel.sh $ARGS"
         ./build_kernel.sh $ARGS
 
-    - name: Post-Flight: Validate Compiled Kernel Image (ISO/IEC 29119)
+    - name: "Post-Flight: Validate Compiled Kernel Image (ISO/IEC 29119)"
       run: |
         if [ -f "out_aosp/arch/arm64/boot/Image" ]; then
           python3 scripts/test_kernel_compatibility.py --validate-image out_aosp/arch/arm64/boot/Image
@@ -123,14 +123,14 @@ jobs:
           python3 scripts/test_kernel_compatibility.py --validate-image out_miui/arch/arm64/boot/Image
         fi
 
-    - name: ccache Statistics & Performance Audit (ISO/IEC 25010)
+    - name: "ccache Statistics & Performance Audit (ISO/IEC 25010)"
       run: |
         echo "### ccache Performance Audit" >> $GITHUB_STEP_SUMMARY
         echo "```" >> $GITHUB_STEP_SUMMARY
         ccache -s | tee -a $GITHUB_STEP_SUMMARY
         echo "```" >> $GITHUB_STEP_SUMMARY
 
-    - name: Cryptographic Checksum & Release Integrity (ISO/IEC 27001 & SLSA)
+    - name: "Cryptographic Checksum & Release Integrity (ISO/IEC 27001 & SLSA)"
       run: |
         sha256sum APTKernel_Pure_*.zip > SHA256SUMS
         echo "### ISO/IEC 27001 Cryptographic Release Integrity" >> $GITHUB_STEP_SUMMARY
@@ -140,7 +140,7 @@ jobs:
           echo "| \`$file\` | \`$sum\` |" >> $GITHUB_STEP_SUMMARY
         done < SHA256SUMS
 
-    - name: Upload Pure Flashable ZIP & SHA256SUMS
+    - name: "Upload Pure Flashable ZIP & SHA256SUMS"
       uses: actions/upload-artifact@v4
       with:
         name: APTKernel-Pure-alioth-aosp-${{ github.run_id }}
