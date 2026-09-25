@@ -408,6 +408,8 @@ build_target() {
         -e ZRAM_DEF_COMP_ZSTD \
         --set-str ZRAM_DEF_COMP "zstd" \
         -e ARM64_4K_PAGES \
+        -e CPU_FREQ_DEFAULT_GOV_SCHEDUTIL \
+        -e DEVFREQ_GOV_MSM_ADRENO_TZ \
         -d SLUB_DEBUG_ON \
         -d PROVE_LOCKING \
         -d LOCKDEP \
