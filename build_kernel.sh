@@ -20,8 +20,9 @@ DEVICE_NAME="$1"
 DEFCONFIG="${DEVICE_NAME}_defconfig"
 DEFCONFIG_PATH="arch/arm64/configs/${DEFCONFIG}"
 
-if [ ! -f "$DEFCONFIG_PATH" ]; then
-    echo "[!] Error: Defconfig not found at $DEFCONFIG_PATH"
+PIXELOS_CONFIG="arch/arm64/configs/vendor/xiaomi/${DEVICE_NAME}.config"
+if [ ! -f "$DEFCONFIG_PATH" ] && [ ! -f "$PIXELOS_CONFIG" ]; then
+    echo "[!] Error: Neither $DEFCONFIG_PATH nor $PIXELOS_CONFIG found."
     echo "[!] Please verify the device name and try again."
     exit 1
 fi
@@ -193,8 +194,13 @@ build_target() {
         sed -i 's/\/\/39 01 00 00 11 00 03 51 03 FF/39 01 00 00 11 00 03 51 03 FF/g' ${DTS_SOURCE}/dsi-panel-j2-p2-1-38-0c-0a-dsc-cmd.dtsi || true
     fi
 
-    echo "[*] Making defconfig: ${DEFCONFIG}..."
-    make "${MAKE_OPTS[@]}" "${DEFCONFIG}"
+    if [ -f "arch/arm64/configs/vendor/xiaomi/${DEVICE_NAME}.config" ]; then
+        echo "[*] Making PixelOS modular defconfig (kona-perf + sm8250-common + ${DEVICE_NAME})..."
+        make "${MAKE_OPTS[@]}" vendor/kona-perf_defconfig vendor/xiaomi/sm8250-common.config "vendor/xiaomi/${DEVICE_NAME}.config"
+    else
+        echo "[*] Making defconfig: ${DEFCONFIG}..."
+        make "${MAKE_OPTS[@]}" "${DEFCONFIG}"
+    fi
 
     # ----------------------------------------------------
     # Configuration tweaks
