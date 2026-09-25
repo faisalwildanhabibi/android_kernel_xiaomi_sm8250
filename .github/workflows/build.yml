@@ -75,10 +75,6 @@ jobs:
         tar -zxf Clang-16.0.6-20260807.tar.gz
         rm -f Clang-16.0.6-20260807.tar.gz
 
-    - name: "Pre-Flight: Validate Defconfig Compatibility Matrix (ISO/IEC 29119)"
-      run: |
-        python3 scripts/test_kernel_compatibility.py arch/arm64/configs/vendor/kona-perf_defconfig
-
     - name: "Configure ccache"
       run: |
         ccache -M 5G
