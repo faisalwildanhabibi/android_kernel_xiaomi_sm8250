@@ -1,86 +1,155 @@
-name: Build Kernel Poco F3 (alioth)
+name: Build Kernel
 
 on:
   workflow_dispatch:
     inputs:
       device:
-        description: 'Target Device (Poco F3)'
+        description: 'Target Device Code (Device Name)'
         required: true
         default: 'alioth'
         type: choice
         options:
           - alioth
+          - apollo
+          - cas
+          - cmi
+          - dagu
+          - elish
+          - enuma
+          - lmi
+          - munch
+          - pipa
+          - psyche
+          - thyme
+          - umi
       ksu:
-        description: 'Enable ReSukiSU + SuSFS'
+        description: 'Enable KernelSU (ReSukiSU)'
         required: true
         type: boolean
         default: true
       target_os:
-        description: 'Target OS'
+        description: 'Target OS ()'
         required: true
         type: choice
         default: 'aosp'
         options:
           - aosp
+          - miui
           - both
+      droidspaces:
+        description: 'Enable DroidSpaces support'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   build-kernel:
-    name: Build ${{ github.event.inputs.device || 'alioth' }} | ReSukiSU:${{ github.event.inputs.ksu != false }} | OS:${{ github.event.inputs.target_os || 'aosp' }}
+    name: Build Pure ${{ github.event.inputs.device }} | KSU:${{ github.event.inputs.ksu }} | OS:${{ github.event.inputs.target_os }}
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v7
+      uses: actions/checkout@v4
       with:
         fetch-depth: 1
 
-    - name: Set up Environment
+    - name: Set up Environment (ISO/IEC 12207 Primitives)
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc bison build-essential ccache curl flex gawk \
-          git gnupg gperf imagemagick libncurses-dev \
-          lib32readline-dev lib32z1-dev liblz4-tool \
-          libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync \
-          schedtool squashfs-tools xsltproc zip zlib1g-dev python3
-          
-    - name: Cache ccache
-      uses: actions/cache@v6
+        sudo apt-get install -y --no-install-recommends \
+          bc bison build-essential ccache curl flex gawk git gnupg \
+          libelf-dev libncurses-dev libssl-dev lzop python3 rsync zip zlib1g-dev
+
+    - name: Cache ccache (ISO/IEC 25010 Efficiency)
+      uses: actions/cache@v4
       with:
         path: ~/.cache/ccache_mikernel
-        key: ${{ runner.os }}-kernel-ccache-alioth-${{ github.run_id }}
+        key: ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device }}-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-kernel-ccache-alioth-
-          ${{ runner.os }}-kernel-ccache-
+          ${{ runner.os }}-pure-kernel-ccache-${{ github.event.inputs.device }}-
+          ${{ runner.os }}-pure-kernel-ccache-
+
+    - name: Cache zyc-clang 16 Toolchain (ISO/IEC 12207 Reproducibility)
+      id: cache-clang
+      uses: actions/cache@v4
+      with:
+        path: ~/zyc-clang
+        key: zyc-clang-16.0.6-20260807
 
     - name: Setup zyc-clang 16 Toolchain
+      if: steps.cache-clang.outputs.cache-hit != 'true'
       run: |
         mkdir -p $HOME/zyc-clang
         cd $HOME/zyc-clang
         wget -q https://github.com/ZyCromerZ/Clang/releases/download/16.0.6-20260807-release/Clang-16.0.6-20260807.tar.gz
-        tar -zxvf Clang-16.0.6-20260807.tar.gz
+        tar -zxf Clang-16.0.6-20260807.tar.gz
+        rm -f Clang-16.0.6-20260807.tar.gz
+
+    - name: Pre-Flight: Validate Defconfig Compatibility Matrix (ISO/IEC 29119)
+      run: |
+        if [ -f "arch/arm64/configs/${{ github.event.inputs.device }}_defconfig" ]; then
+          python3 scripts/test_kernel_compatibility.py arch/arm64/configs/${{ github.event.inputs.device }}_defconfig
+        elif [ -f "arch/arm64/configs/vendor/xiaomi/${{ github.event.inputs.device }}.config" ]; then
+          python3 scripts/test_kernel_compatibility.py arch/arm64/configs/vendor/kona-perf_defconfig
+        fi
+
+    - name: Configure ccache
+      run: |
+        ccache -M 5G
+        ccache -z
 
     - name: Run Build Script
       run: |
         chmod +x build_kernel.sh
         
-        DEVICE="${{ github.event.inputs.device }}"
-        [ -z "$DEVICE" ] && DEVICE="alioth"
+        ARGS="${{ github.event.inputs.device }}"
         
-        KSU_FLAG=""
-        if [ "${{ github.event.inputs.ksu }}" != "false" ]; then
-          KSU_FLAG="ksu"
+        if [ "${{ github.event.inputs.ksu }}" == "true" ]; then
+          ARGS="$ARGS ksu"
         fi
         
-        OS_FLAG="${{ github.event.inputs.target_os }}"
-        [ -z "$OS_FLAG" ] && OS_FLAG="aosp"
-        
-        echo "Executing: ./build_kernel.sh $DEVICE $KSU_FLAG $OS_FLAG"
-        ./build_kernel.sh $DEVICE $KSU_FLAG $OS_FLAG
+        if [ "${{ github.event.inputs.target_os }}" != "both" ]; then
+          ARGS="$ARGS ${{ github.event.inputs.target_os }}"
+        fi
 
-    - name: Upload Flashable AnyKernel3 ZIP
-      uses: actions/upload-artifact@v7
+        if [ "${{ github.event.inputs.droidspaces }}" == "true" ]; then
+          ARGS="$ARGS droidspaces"
+        fi
+        
+        echo "Executing command: ./build_kernel.sh $ARGS"
+        ./build_kernel.sh $ARGS
+
+    - name: Post-Flight: Validate Compiled Kernel Image (ISO/IEC 29119)
+      run: |
+        if [ -f "out_aosp/arch/arm64/boot/Image" ]; then
+          python3 scripts/test_kernel_compatibility.py --validate-image out_aosp/arch/arm64/boot/Image
+        fi
+        if [ -f "out_miui/arch/arm64/boot/Image" ]; then
+          python3 scripts/test_kernel_compatibility.py --validate-image out_miui/arch/arm64/boot/Image
+        fi
+
+    - name: ccache Statistics & Performance Audit (ISO/IEC 25010)
+      run: |
+        echo "###  ccache Performance Audit" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        ccache -s | tee -a $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+    - name: Cryptographic Checksum & Release Integrity (ISO/IEC 27001 & SLSA)
+      run: |
+        sha256sum APTKernel_Pure_*.zip > SHA256SUMS
+        echo "###  ISO/IEC 27001 Cryptographic Release Integrity" >> $GITHUB_STEP_SUMMARY
+        echo "| Artifact | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+        echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+        while read -r sum file; do
+          echo "| \`$file\` | \`$sum\` |" >> $GITHUB_STEP_SUMMARY
+        done < SHA256SUMS
+
+    - name: Upload Pure Flashable ZIP & SHA256SUMS
+      uses: actions/upload-artifact@v4
       with:
-        name: PixelOS-Alioth-Kernel-${{ github.event.inputs.ksu != false && 'ReSukiSU-SuSFS' || 'Vanilla' }}-${{ github.run_id }}
-        path: PixelOS_*.zip
+        name: APTKernel-Pure-${{ github.event.inputs.device }}-${{ github.event.inputs.target_os }}-${{ github.run_id }}
+        path: |
+          APTKernel_Pure_*.zip
+          SHA256SUMS
         compression-level: 0
