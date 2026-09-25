@@ -1,37 +1,40 @@
-name: Build Kernel
+name: Build Pure alioth Kernel
 
 on:
   workflow_dispatch:
     inputs:
       device:
         description: 'Target Device Code'
-        required: true
+        required: false
         default: 'alioth'
-        type: choice
-        options:
-          - alioth
       ksu:
-        description: 'Enable KernelSU (ReSukiSu)'
-        required: true
-        type: boolean
-        default: true
+        description: 'Enable KernelSU (true/false)'
+        required: false
+        default: 'true'
       target_os:
-        description: 'Target OS'
-        required: true
-        type: choice
+        description: 'Target OS (aosp/miui/both)'
+        required: false
         default: 'aosp'
-        options:
-          - aosp
-          - both
       droidspaces:
-        description: 'Enable DroidSpaces support'
-        required: true
-        type: boolean
-        default: false
+        description: 'Enable DroidSpaces (true/false)'
+        required: false
+        default: 'false'
+  push:
+    branches:
+      - seventeen-sukisu-susfs
+    paths:
+      - 'build_kernel.sh'
+      - 'anykernel_template.sh'
+      - 'scripts/**'
+      - 'arch/arm64/configs/**'
+      - 'fs/susfs.c'
+      - 'include/linux/susfs.h'
+      - '.github/workflows/build.yml'
+      - '.trigger'
 
 jobs:
   build-kernel:
-    name: Build Pure Kernel (alioth)
+    name: Build Pure alioth Kernel
     runs-on: ubuntu-latest
     
     steps:
@@ -88,17 +91,23 @@ jobs:
         DEV="${{ github.event.inputs.device }}"
         [ -z "$DEV" ] && DEV="alioth"
         
-        ARGS="$DEV"
-        
-        if [ "${{ github.event.inputs.ksu }}" != "false" ]; then
-          ARGS="$ARGS ksu"
-        fi
+        KSU_FLAG="${{ github.event.inputs.ksu }}"
+        [ -z "$KSU_FLAG" ] && KSU_FLAG="true"
         
         OS_FLAG="${{ github.event.inputs.target_os }}"
         [ -z "$OS_FLAG" ] && OS_FLAG="aosp"
+        
+        DS_FLAG="${{ github.event.inputs.droidspaces }}"
+        [ -z "$DS_FLAG" ] && DS_FLAG="false"
+        
+        ARGS="$DEV"
+        if [ "$KSU_FLAG" = "true" ]; then
+          ARGS="$ARGS ksu"
+        fi
+        
         ARGS="$ARGS $OS_FLAG"
-
-        if [ "${{ github.event.inputs.droidspaces }}" == "true" ]; then
+        
+        if [ "$DS_FLAG" = "true" ]; then
           ARGS="$ARGS droidspaces"
         fi
         
