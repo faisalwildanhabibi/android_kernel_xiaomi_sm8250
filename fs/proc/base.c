@@ -95,6 +95,9 @@
 #include <linux/flex_array.h>
 #include <linux/posix-timers.h>
 #include <linux/cpufreq_times.h>
+#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#include <linux/susfs_def.h>
+#endif // #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
 #include <trace/events/oom.h>
 #include "internal.h"
 #include "fd.h"
@@ -1885,6 +1888,10 @@ out:
 	return ERR_PTR(error);
 }
 
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+extern int susfs_open_redirect_spoof_do_proc_readlink(struct inode *inode, char *tmp_buf, int buflen);
+#endif
+
 static int do_proc_readlink(struct path *path, char __user *buffer, int buflen)
 {
 	char *tmp = (char *)__get_free_page(GFP_KERNEL);
@@ -1893,6 +1900,17 @@ static int do_proc_readlink(struct path *path, char __user *buffer, int buflen)
 
 	if (!tmp)
 		return -ENOMEM;
+
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	if (SUSFS_IS_INODE_OPEN_REDIRECT(path->dentry->d_inode)) {
+		if (!susfs_open_redirect_spoof_do_proc_readlink(path->dentry->d_inode, tmp, buflen)) {
+			len = strlen(tmp);
+			if (copy_to_user(buffer, tmp, len))
+				len = -EFAULT;
+			goto out;
+		}
+	}
+#endif
 
 	pathname = d_path(path, tmp, PAGE_SIZE);
 	len = PTR_ERR(pathname);
@@ -2480,6 +2498,10 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 				vma = vma->vm_next) {
 			if (!vma->vm_file)
 				continue;
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+		if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
+			continue;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 			if (++pos <= ctx->pos)
 				continue;
 
@@ -3388,6 +3410,65 @@ static const struct file_operations proc_setgroups_operations = {
 };
 #endif /* CONFIG_USER_NS */
 
+
+#ifdef CONFIG_PERF_HUMANTASK
+static ssize_t human_task_read(struct file *file, char __user *buf,
+		size_t count, loff_t *ppos)
+{
+	struct task_struct *task = get_proc_task(file_inode(file));
+	char buffer[PROC_NUMBUF];
+	unsigned int human_task = 0;
+	size_t len;
+
+	if (!task)
+		return -ESRCH;
+	human_task = task->human_task;
+	put_task_struct(task);
+	len = snprintf(buffer, sizeof(buffer), "%d\n", human_task);
+	return simple_read_from_buffer(buf, count, ppos, buffer, len);
+}
+
+static ssize_t human_task_write(struct file *file, const char __user *buf,
+		size_t count, loff_t *ppos)
+{
+	char buffer[PROC_NUMBUF];
+	unsigned int human_task = 0;
+	struct task_struct *task;
+	int err;
+
+	memset(buffer, 0, sizeof(buffer));
+	if (count > sizeof(buffer) - 1)
+		count = sizeof(buffer) - 1;
+	if (copy_from_user(buffer, buf, count)) {
+		err = -EFAULT;
+		goto out;
+	}
+
+	err = kstrtoint(strstrip(buffer), 0, &human_task);
+	if (err)
+		goto out;
+	if (human_task <  0 || human_task > 1000) {
+		err = -EINVAL;
+		goto out;
+	}
+
+	task  = get_proc_task(file_inode(file));
+	if (!task)
+		return -ESRCH;
+	task_lock(task);
+	task->human_task = human_task;
+	task_unlock(task);
+out:
+	return err < 0 ? err : count;
+}
+
+static const struct file_operations proc_tid_set_human_task_operations = {
+	.read		= human_task_read,
+	.write		= human_task_write,
+	.llseek		= default_llseek,
+};
+#endif
+
 static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
 				struct pid *pid, struct task_struct *task)
 {
@@ -3418,7 +3499,7 @@ static const struct pid_entry tgid_base_stuff[] = {
 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
 	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
-	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+	DIR("fdinfo",     S_IRUGO|S_IXUGO, proc_fdinfo_inode_operations, proc_fdinfo_operations),
 	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
 #ifdef CONFIG_NET
 	DIR("net",        S_IRUGO|S_IXUGO, proc_net_inode_operations, proc_net_operations),
@@ -3832,7 +3913,7 @@ static const struct inode_operations proc_tid_comm_inode_operations = {
  */
 static const struct pid_entry tid_base_stuff[] = {
 	DIR("fd",        S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
-	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+	DIR("fdinfo",    S_IRUGO|S_IXUGO, proc_fdinfo_inode_operations, proc_fdinfo_operations),
 	DIR("ns",	 S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
 #ifdef CONFIG_NET
 	DIR("net",        S_IRUGO|S_IXUGO, proc_net_inode_operations, proc_net_operations),
