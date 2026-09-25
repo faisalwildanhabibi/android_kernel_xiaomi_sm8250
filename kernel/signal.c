@@ -61,8 +61,6 @@
 #endif /* CONFIG_REKERNEL */
 #include "audit.h"	/* audit_signal_info() */
 
-#undef CREATE_TRACE_POINTS
-#include <trace/hooks/signal.h>
 /*
  * SLAB caches for signal bits.
  */
@@ -1280,7 +1278,6 @@ int do_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 		rekernel_report(SIGNAL, sig, task_tgid_nr(current), current, task_tgid_nr(p), p, false, NULL);
 #endif /* CONFIG_REKERNEL */
 
-	trace_android_vh_do_send_sig_info(sig, current, p);
 	if (lock_task_sighand(p, &flags)) {
 		ret = send_signal(sig, info, p, type);
 		unlock_task_sighand(p, &flags);
