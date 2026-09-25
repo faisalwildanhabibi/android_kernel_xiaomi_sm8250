@@ -1,45 +1,32 @@
-name: Build Kernel
+name: Build Kernel Poco F3 (alioth)
 
 on:
   workflow_dispatch:
     inputs:
       device:
-        description: 'Target Device Code (设备代号)'
+        description: 'Target Device (Poco F3)'
         required: true
-        default: 'lmi'
+        default: 'alioth'
         type: choice
         options:
           - alioth
-          - apollo
-          - cas
-          - cmi
-          - dagu
-          - elish
-          - enuma
-          - lmi
-          - munch
-          - pipa
-          - psyche
-          - thyme
-          - umi
       ksu:
-        description: 'Enable KernelSU (ReSukiSU)'
+        description: 'Enable ReSukiSU + SuSFS'
         required: true
         type: boolean
-        default: false
+        default: true
       target_os:
-        description: 'Target OS (目标系统)'
+        description: 'Target OS'
         required: true
         type: choice
-        default: 'both'
+        default: 'aosp'
         options:
           - aosp
-          - miui
           - both
 
 jobs:
   build-kernel:
-    name: Build ${{ github.event.inputs.device }} | KSU:${{ github.event.inputs.ksu }} | OS:${{ github.event.inputs.target_os }}
+    name: Build ${{ github.event.inputs.device || 'alioth' }} | ReSukiSU:${{ github.event.inputs.ksu != false }} | OS:${{ github.event.inputs.target_os || 'aosp' }}
     runs-on: ubuntu-latest
     
     steps:
@@ -61,9 +48,9 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/.cache/ccache_mikernel
-        key: ${{ runner.os }}-kernel-ccache-${{ github.event.inputs.device }}-${{ github.run_id }}
+        key: ${{ runner.os }}-kernel-ccache-alioth-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-kernel-ccache-${{ github.event.inputs.device }}-
+          ${{ runner.os }}-kernel-ccache-alioth-
           ${{ runner.os }}-kernel-ccache-
 
     - name: Setup zyc-clang 16 Toolchain
@@ -77,22 +64,23 @@ jobs:
       run: |
         chmod +x build_kernel.sh
         
-        ARGS="${{ github.event.inputs.device }}"
+        DEVICE="${{ github.event.inputs.device }}"
+        [ -z "$DEVICE" ] && DEVICE="alioth"
         
-        if [ "${{ github.event.inputs.ksu }}" == "true" ]; then
-          ARGS="$ARGS ksu"
+        KSU_FLAG=""
+        if [ "${{ github.event.inputs.ksu }}" != "false" ]; then
+          KSU_FLAG="ksu"
         fi
         
-        if [ "${{ github.event.inputs.target_os }}" != "both" ]; then
-          ARGS="$ARGS ${{ github.event.inputs.target_os }}"
-        fi
+        OS_FLAG="${{ github.event.inputs.target_os }}"
+        [ -z "$OS_FLAG" ] && OS_FLAG="aosp"
         
-        echo "Executing command: ./build_kernel.sh $ARGS"
-        ./build_kernel.sh $ARGS
+        echo "Executing: ./build_kernel.sh $DEVICE $KSU_FLAG $OS_FLAG"
+        ./build_kernel.sh $DEVICE $KSU_FLAG $OS_FLAG
 
-    - name: Upload Flashable ZIP
+    - name: Upload Flashable AnyKernel3 ZIP
       uses: actions/upload-artifact@v7
       with:
-        name: APTKernel-${{ github.event.inputs.device }}-${{ github.event.inputs.target_os }}-${{ github.run_id }}
+        name: PixelOS-Alioth-Kernel-${{ github.event.inputs.ksu != false && 'ReSukiSU-SuSFS' || 'Vanilla' }}-${{ github.run_id }}
         path: APTKernel_*.zip
-        compression-level: 0 # 已经被 zip 压缩过，无需再二次压缩
+        compression-level: 0

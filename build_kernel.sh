@@ -27,8 +27,8 @@ if [ ! -f "$DEFCONFIG_PATH" ] && [ ! -f "$PIXELOS_CONFIG" ]; then
     exit 1
 fi
 
-ENABLE_KSU=0
-TARGET_OS="both"
+ENABLE_KSU=1
+TARGET_OS="aosp"
 
 shift
 # Parse remaining arguments loosely
