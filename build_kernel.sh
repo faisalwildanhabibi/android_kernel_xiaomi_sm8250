@@ -371,15 +371,29 @@ build_target() {
     fi
 
     # 2.1 EROFS filesystem configuration (Mandatory for PixelOS Android 14/15/17)
-        # 2.2 Link-Time Optimization (ThinLTO for fast compilation without runner memory starvation)
+    # 2.2 Link-Time Optimization (ThinLTO for fast compilation without runner memory starvation)
     echo "[*] Ensuring ThinLTO is enabled..."
-    scripts/config --file "${OUT_DIR}/.config"         -e LTO_CLANG         -e THINLTO         -d LTO_NONE
+    scripts/config --file "${OUT_DIR}/.config" -e LTO_CLANG -e THINLTO -d LTO_NONE
 
     echo "[*] Ensuring EROFS filesystem support..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e EROFS_FS \
         -e EROFS_FS_PCPU_KTHREAD \
         -e EROFS_FS_PCPU_KTHREAD_HIPRI
+
+    # 2.3 Universal Interoperability & Android 14/15/17 Optimizations
+    echo "[*] Injecting Universal Interoperability & Performance Optimizations..."
+    scripts/config --file "${OUT_DIR}/.config" \
+        -e USER_NS \
+        -e PID_NS \
+        -e MEMCG \
+        -e MEMCG_SWAP \
+        -e F2FS_FS_ZSTD \
+        -e F2FS_FS_LZ4 \
+        -d F2FS_UNFAIR_RWSEM \
+        -e KPROBES \
+        -e HAVE_KPROBES \
+        -e KPROBE_EVENTS
 
     # 3. MIUI configurations
     if [ "$OS_TYPE" == "miui" ]; then
