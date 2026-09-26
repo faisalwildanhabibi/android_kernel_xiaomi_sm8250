@@ -1173,41 +1173,8 @@ free_coherent:
 int ipa3_uc_debug_stats_alloc(
 	struct IpaHwOffloadStatsAllocCmdData_t cmdinfo)
 {
-	int result;
-	struct ipa_mem_buffer cmd;
-	enum ipa_cpu_2_hw_offload_commands command;
-	struct IpaHwOffloadStatsAllocCmdData_t *cmd_data;
-
-	cmd.size = sizeof(*cmd_data);
-	cmd.base = dma_alloc_coherent(ipa3_ctx->uc_pdev, cmd.size,
-		&cmd.phys_base, GFP_KERNEL);
-	if (cmd.base == NULL) {
-		result = -ENOMEM;
-		return result;
-	}
-	cmd_data = (struct IpaHwOffloadStatsAllocCmdData_t *)cmd.base;
-	memcpy(cmd_data, &cmdinfo,
-		sizeof(struct IpaHwOffloadStatsAllocCmdData_t));
-	command = IPA_CPU_2_HW_CMD_OFFLOAD_STATS_ALLOC;
-
-	IPA_ACTIVE_CLIENTS_INC_SIMPLE();
-
-	result = ipa3_uc_send_cmd((u32)(cmd.phys_base),
-		command,
-		IPA_HW_2_CPU_OFFLOAD_CMD_STATUS_SUCCESS,
-		false, 20 * HZ);
-	if (result) {
-		IPAERR("fail to alloc offload stats\n");
-		goto cleanup;
-	}
-	result = 0;
-cleanup:
-	dma_free_coherent(ipa3_ctx->uc_pdev,
-		cmd.size,
-		cmd.base, cmd.phys_base);
-	IPA_ACTIVE_CLIENTS_DEC_SIMPLE();
-	IPADBG("exit\n");
-	return result;
+	/* Bypass uC debug stats allocation to prevent suspend panic */
+	return 0;
 }
 
 int ipa3_uc_debug_stats_dealloc(uint32_t prot_id)
