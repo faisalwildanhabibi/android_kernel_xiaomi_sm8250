@@ -112,6 +112,12 @@ def run_tests(config_path):
         ("Universal Interoperability", "F2FS ZSTD Decompression", "CONFIG_F2FS_FS_ZSTD", "y", "Interoperability with custom ROMs utilizing ZSTD userdata compression", "ADVISORY"),
         ("Universal Interoperability", "F2FS LZ4 Decompression", "CONFIG_F2FS_FS_LZ4", "y", "Interoperability with custom ROMs utilizing LZ4 userdata compression", "ADVISORY"),
         ("Universal Interoperability", "Universal Tethering / Masquerade", "CONFIG_IP_NF_TARGET_MASQUERADE", "y", "Ensures seamless Wi-Fi hotspot and USB tethering NAT routing", "ADVISORY"),
+        ("Universal Interoperability", "Fair Queueing (FQ) Packet Pacing", "CONFIG_NET_SCH_FQ", "y", "Pacing scheduler for BBR & Westwood+ anti-bufferbloat", "ADVISORY"),
+        ("Universal Interoperability", "FQ-CoDel Controlled Delay Queue", "CONFIG_NET_SCH_FQ_CODEL", "y", "Bufferbloat elimination for Wi-Fi and Cellular", "ADVISORY"),
+        ("Universal Interoperability", "BPF Stream Parser for AdGuard/Proxies", "CONFIG_BPF_STREAM_PARSER", "y", "Kernel socket splicing for zero-copy proxying", "ADVISORY"),
+        ("Universal Interoperability", "IPSet Network Packet Matching", "CONFIG_IP_SET", "y", "High-speed IP routing table matching for AdGuard", "ADVISORY"),
+        ("Universal Interoperability", "Netfilter TPROXY Target", "CONFIG_NETFILTER_XT_TARGET_TPROXY", "y", "Transparent proxy redirection without NAT rewrite", "ADVISORY"),
+        ("Universal Interoperability", "Netfilter Match Socket", "CONFIG_NETFILTER_XT_MATCH_SOCKET", "y", "Socket match for non-local socket delivery", "ADVISORY"),
 
         # =========================================================================
         # 5. PIXELOS ANDROID 16/17 FBE V2 & HARDWARE SECURITY ALIGNMENT
