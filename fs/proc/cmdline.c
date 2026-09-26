@@ -8,21 +8,15 @@
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 extern struct static_key_false susfs_is_fake_cmdline_or_bootconfig_buffer_set;
 extern void susfs_spoof_cmdline_or_bootconfig(struct seq_file *m);
-extern char *susfs_fake_cmdline_or_bootconfig;
 #endif
 
 static int cmdline_proc_show(struct seq_file *m, void *v)
 {
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 	if (static_branch_likely(&susfs_is_fake_cmdline_or_bootconfig_buffer_set)) {
-		/* Fail-safe: ignore template comment files starting with '#' */
-		if (susfs_fake_cmdline_or_bootconfig &&
-		    susfs_fake_cmdline_or_bootconfig[0] != '#' &&
-		    susfs_fake_cmdline_or_bootconfig[0] != '\0') {
-			susfs_spoof_cmdline_or_bootconfig(m);
-			seq_putc(m, '\n');
-			return 0;
-		}
+		susfs_spoof_cmdline_or_bootconfig(m);
+		seq_putc(m, '\n');
+		return 0;
 	}
 #endif
 	/* Hardened kernel fallback: sanitize bootloader unlocked indicators */
