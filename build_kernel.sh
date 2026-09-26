@@ -412,6 +412,17 @@ build_target() {
         -e TCP_FASTOPEN_COOKIE_CHECK \
         -e BPF_JIT \
         -e BPF_JIT_ALWAYS_ON \
+        -e NET_SCHED \
+        -e NET_SCH_FQ \
+        -e NET_SCH_FQ_CODEL \
+        -e BPF_STREAM_PARSER \
+        -e IP_SET \
+        -e IP_SET_HASH_IP \
+        -e IP_SET_HASH_NET \
+        -e NETFILTER_XT_SET \
+        -e NETFILTER_XT_TARGET_TPROXY \
+        -e NETFILTER_XT_MATCH_SOCKET \
+        -e NET_CLS_ACT \
         -e ZRAM_WRITEBACK \
         -e CRYPTO_ZSTD \
         -e ZRAM_DEF_COMP_ZSTD \
