@@ -184,9 +184,9 @@ static inline void susfs_clear_current_proc_umounted_for_zygote_next(void) {
 static inline bool susfs_is_current_proc_umounted_app(void) {
 	return (likely(test_thread_flag(TIF_PROC_UMOUNTED)) &&
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
-			__kuid_val(current_uid()) >= 10000);
+			((__kuid_val(current_uid()) % 100000) >= 10000));
 #else
-			current_uid().val >= 10000);
+			((current_uid().val % 100000) >= 10000));
 #endif
 }
 
