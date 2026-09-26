@@ -84,6 +84,9 @@
 #include <linux/rcupdate.h>
 #include <linux/delayacct.h>
 #include <linux/seq_file.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+#endif
 #include <linux/pid_namespace.h>
 #include <linux/prctl.h>
 #include <linux/ptrace.h>
@@ -168,6 +171,25 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
 	if (tracer)
 		tpid = task_pid_nr_ns(tracer, ns);
 
+#ifdef CONFIG_KSU_SUSFS
+	/*
+	 * Smart TracerPid Virtualization:
+	 * Protect isolated / unmounted apps from external ptrace / Frida detection.
+	 * 1. If tracer belongs to the same UID / process family (e.g. self-ptrace watchdog
+	 *    like Bandai Namco libengine.so in Digimon Up), PRESERVE tpid so internal
+	 *    anti-cheat watchdog checks succeed seamlessly without anomaly.
+	 * 2. If tracer is external (root, frida-server, debugger with different UID),
+	 *    VIRTUALIZE tpid to 0 so external attachment is completely hidden.
+	 */
+	if (tracer && susfs_is_current_proc_umounted_app()) {
+		kuid_t p_uid = task_uid(p);
+		kuid_t tracer_uid = task_uid(tracer);
+		if (!uid_eq(p_uid, tracer_uid)) {
+			tpid = 0;
+		}
+	}
+#endif
+
 	tgid = task_tgid_nr_ns(p, ns);
 	ngid = task_numa_group_id(p);
 	cred = get_task_cred(p);
@@ -182,8 +204,17 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
 
 	if (umask >= 0)
 		seq_printf(m, "Umask:\t%#04o\n", umask);
-	seq_puts(m, "State:\t");
-	seq_puts(m, get_task_state(p));
+	{
+		const char *s_state = get_task_state(p);
+#ifdef CONFIG_KSU_SUSFS
+		if (tpid == 0 && tracer && susfs_is_current_proc_umounted_app()) {
+			if (task_is_traced(p))
+				s_state = "S (sleeping)";
+		}
+#endif
+		seq_puts(m, "State:\t");
+		seq_puts(m, s_state);
+	}
 
 	seq_put_decimal_ull(m, "\nTgid:\t", tgid);
 	seq_put_decimal_ull(m, "\nNgid:\t", ngid);
