@@ -21,9 +21,9 @@
 #include <linux/pkeys.h>
 #include <linux/mm_inline.h>
 #include <linux/ctype.h>
-#if defined(CONFIG_KSU_SUSFS_SUS_KSTAT) || defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs_def.h>
-#endif // #if defined(CONFIG_KSU_SUSFS_SUS_KSTAT) || defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#endif
 
 #include <asm/elf.h>
 #include <asm/tlb.h>
@@ -397,6 +397,14 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 		if (SUSFS_IS_INODE_SUS_MAP(inode))
 			return;
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
+#ifdef CONFIG_KSU_SUSFS
+		if (susfs_is_current_proc_umounted_app() && file->f_path.dentry) {
+			const unsigned char *dname = file->f_path.dentry->d_name.name;
+			if (dname && (strstr(dname, "lspd") || strstr(dname, "frida") ||
+			              strstr(dname, "zygisk") || strstr(dname, "xposed")))
+				return;
+		}
+#endif
 		dev = inode->i_sb->s_dev;
 		ino = inode->i_ino;
 		pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
@@ -444,6 +452,14 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 		}
 
 		if (vma_get_anon_name(vma)) {
+#ifdef CONFIG_KSU_SUSFS
+			if (susfs_is_current_proc_umounted_app()) {
+				const char *anon_name = vma_get_anon_name(vma);
+				if (anon_name && (strstr(anon_name, "lspd") || strstr(anon_name, "frida") ||
+				                  strstr(anon_name, "gum-js") || strstr(anon_name, "zygisk")))
+					return;
+			}
+#endif
 			seq_pad(m, ' ');
 			seq_print_vma_name(m, vma);
 		}
@@ -891,6 +907,14 @@ static int show_smap(struct seq_file *m, void *v)
 			return 0;
 	}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
+#ifdef CONFIG_KSU_SUSFS
+	if (vma->vm_file && susfs_is_current_proc_umounted_app() && vma->vm_file->f_path.dentry) {
+		const unsigned char *dname = vma->vm_file->f_path.dentry->d_name.name;
+		if (dname && (strstr(dname, "lspd") || strstr(dname, "frida") ||
+		              strstr(dname, "zygisk") || strstr(dname, "xposed")))
+			return 0;
+	}
+#endif
 
 	memset(&mss, 0, sizeof(mss));
 
