@@ -53,6 +53,11 @@ export PATH="${TOOLCHAIN_BIN}:${PATH}"
 export ARCH="arm64"
 export SUBARCH="arm64"
 
+# Standardized OEM / Google AOSP Kernel Build Identity (Zero-Trace Stealth)
+export KBUILD_BUILD_USER="android-build"
+export KBUILD_BUILD_HOST="google.com"
+export KBUILD_BUILD_TIMESTAMP="Tue Sep 22 16:57:36 CEST 2026"
+
 # ccache Setup
 export CCACHE_DIR="$HOME/.cache/ccache_mikernel"
 export CCACHE_EXEC=$(command -v ccache)
@@ -356,9 +361,9 @@ build_target() {
     # Configuration tweaks
     # ----------------------------------------------------
     
-    # 1. Baseband-guard configuration (Ensure disabled)
-    echo "[*] Ensuring Baseband-guard is disabled..."
-    scripts/config --file "${OUT_DIR}/.config" -d BBG -d BPF_PRELOAD -d BPF_PRELOAD_UMD
+    # 1. Baseband-guard configuration & OEM Pure Release Identity
+    echo "[*] Ensuring Baseband-guard is disabled and pure OEM release identity is enforced..."
+    scripts/config --file "${OUT_DIR}/.config" -d BBG -d BPF_PRELOAD -d BPF_PRELOAD_UMD -d LOCALVERSION_AUTO
 
     # 2. KernelSU & SuSFS configurations (ISO/IEC 25010 & 27001 Hardened Stealth Mode)
     if [ "$ENABLE_KSU" -eq 1 ]; then
