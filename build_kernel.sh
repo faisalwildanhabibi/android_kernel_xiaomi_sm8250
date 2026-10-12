@@ -376,6 +376,7 @@ build_target() {
             -e KSU_SUSFS_OPEN_REDIRECT \
             -e KSU_SUSFS_SUS_MAP \
             -d KSU_SUSFS_ENABLE_LOG \
+            -e SECURITY_DMESG_RESTRICT \
             -d CFI \
             -d CFI_CLANG \
             -d CFI_CLANG_SHADOW \
