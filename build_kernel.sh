@@ -88,7 +88,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     KSU_SETUP_TMP=$(mktemp)
     if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
         echo "[+] [ISO 27001 / SLSA] ReSukiSU script retrieved successfully (size: $(stat -c%s "$KSU_SETUP_TMP" 2>/dev/null || stat -f%z "$KSU_SETUP_TMP" 2>/dev/null || echo 0) bytes)."
-        bash "$KSU_SETUP_TMP" 5b76b884c75f729a220bb317aa4a4fc78f0e0e9c
+        bash "$KSU_SETUP_TMP" main
         rm -f "$KSU_SETUP_TMP"
         if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
             sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
