@@ -427,6 +427,8 @@ build_target() {
         -e ARM64_4K_PAGES \
         -e CPU_FREQ_DEFAULT_GOV_SCHEDUTIL \
         -e DEVFREQ_GOV_MSM_ADRENO_TZ \
+        -e DMABUF_SYSFS_STATS \
+        -e SUSPEND_SKIP_SYNC \
         -d SLUB_DEBUG_ON \
         -d PROVE_LOCKING \
         -d LOCKDEP \
