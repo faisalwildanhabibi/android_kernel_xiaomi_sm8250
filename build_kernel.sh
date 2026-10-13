@@ -414,8 +414,9 @@ build_target() {
         -e TCP_CONG_ADVANCED \
         -e TCP_CONG_WESTWOOD \
         -e TCP_CONG_BBR \
-        -e DEFAULT_WESTWOOD \
-        --set-str DEFAULT_TCP_CONG "westwood" \
+        -e DEFAULT_BBR \
+        -d DEFAULT_WESTWOOD \
+        --set-str DEFAULT_TCP_CONG "bbr" \
         -e TCP_FASTOPEN \
         -e TCP_FASTOPEN_COOKIE_CHECK \
         -e BPF_JIT \
@@ -429,6 +430,8 @@ build_target() {
         -e DEVFREQ_GOV_MSM_ADRENO_TZ \
         -e DMABUF_SYSFS_STATS \
         -e SUSPEND_SKIP_SYNC \
+        -e MM_EVENT_STAT \
+        -d FAIR_GROUP_SCHED \
         -d SLUB_DEBUG_ON \
         -d PROVE_LOCKING \
         -d LOCKDEP \
