@@ -101,10 +101,11 @@ int vfs_getattr_nosec(const struct path *path, struct kstat *stat,
 				// stat->mnt_id = real_mount(path->mnt)->mnt_id;
 				// only for 5.10 kernel
 				stat->result_mask |= STATX_SUS_KSTAT;
+			} else {
+				// stat->mnt_id = real_mount(path->mnt)->mnt_id;
+				// only for 5.10 kernel
+				stat->result_mask |= STATX_SUS_KSTAT_FUSE;
 			}
-			// stat->mnt_id = real_mount(path->mnt)->mnt_id;
-			// only for 5.10 kernel
-			stat->result_mask |= STATX_SUS_KSTAT_FUSE;
 		}
 	}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
@@ -117,11 +118,13 @@ int vfs_getattr_nosec(const struct path *path, struct kstat *stat,
 		if (!err) {
 			if (stat->result_mask & STATX_SUS_KSTAT) {
 				susfs_sus_kstat_spoof_generic_fillattr(inode, stat, STATX_SUS_KSTAT);
+				stat->result_mask &= ~STATX_SUS_KSTAT;
 				return err;
 			}
 			if (stat->result_mask & STATX_SUS_KSTAT_FUSE) {
 				susfs_sus_kstat_spoof_generic_fillattr(inode, stat, STATX_SUS_KSTAT_FUSE);
-			return err;
+				stat->result_mask &= ~STATX_SUS_KSTAT_FUSE;
+				return err;
 			}
 		}
 		return err;
@@ -129,11 +132,13 @@ int vfs_getattr_nosec(const struct path *path, struct kstat *stat,
 	if (stat->result_mask & STATX_SUS_KSTAT) {
 		generic_fillattr(inode, stat);
 		susfs_sus_kstat_spoof_generic_fillattr(inode, stat, STATX_SUS_KSTAT);
+		stat->result_mask &= ~STATX_SUS_KSTAT;
 		return 0;
 	}
 	if (stat->result_mask & STATX_SUS_KSTAT_FUSE) {
 		generic_fillattr(inode, stat);
 		susfs_sus_kstat_spoof_generic_fillattr(inode, stat, STATX_SUS_KSTAT_FUSE);
+		stat->result_mask &= ~STATX_SUS_KSTAT_FUSE;
 		return 0;
 	}
 #else
@@ -611,7 +616,7 @@ cp_statx(const struct kstat *stat, struct statx __user *buffer)
 
 	memset(&tmp, 0, sizeof(tmp));
 
-	tmp.stx_mask = stat->result_mask;
+	tmp.stx_mask = stat->result_mask & STATX_ALL;
 	tmp.stx_blksize = stat->blksize;
 	tmp.stx_attributes = stat->attributes;
 	tmp.stx_nlink = stat->nlink;
