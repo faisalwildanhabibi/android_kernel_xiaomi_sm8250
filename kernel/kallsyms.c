@@ -645,6 +645,9 @@ static inline bool susfs_is_hidden_kallsym(const char *name)
 	if (susfs_starts_with(name, "ksu_") ||
 	    susfs_starts_with(name, "__ksu_") ||
 	    susfs_starts_with(name, "susfs_") ||
+	    susfs_starts_with(name, "sus_") ||
+	    susfs_starts_with(name, "SUS_") ||
+	    susfs_starts_with(name, "LH_SUS_") ||
 	    susfs_starts_with(name, "ksud") ||
 	    susfs_starts_with(name, "is_ksu_") ||
 	    susfs_starts_with(name, "is_manager_") ||
@@ -661,6 +664,17 @@ static inline bool susfs_is_hidden_kallsym(const char *name)
 	    susfs_starts_with(name, "getenforce") ||
 	    susfs_starts_with(name, "setenforce") ||
 	    susfs_starts_with(name, "is_zygote") ||
+	    !strcmp(name, "statfs_by_dentry") ||
+	    !strcmp(name, "fake_cmdline_or_bootconfig") ||
+	    !strcmp(name, "my_uname") ||
+	    !strcmp(name, "OPEN_REDIRECT_HLIST") ||
+	    !strcmp(name, "sdcard_cleanup_scheduled") ||
+	    !strcmp(name, "sdcard_cleanup_dwork") ||
+	    !strcmp(name, "g_watch") ||
+	    !strcmp(name, "watch_one_dir") ||
+	    !strcmp(name, "add_mark_on_inode") ||
+	    !strcmp(name, "is_i_uid_not_allowed") ||
+	    !strcmp(name, "copy_config_to_buf") ||
 	    strstr(name, "_ksu_") ||
 	    strstr(name, "_ksu.") ||
 	    strstr(name, ".ksu") ||
