@@ -31,6 +31,7 @@ on:
       - 'include/linux/susfs.h'
       - 'net/unix/**'
       - 'security/selinux/**'
+      - 'fs/proc/**'
       - '.github/workflows/build.yml'
       - '.trigger_ci'
 
