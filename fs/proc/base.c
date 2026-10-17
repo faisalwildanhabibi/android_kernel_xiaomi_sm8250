@@ -370,6 +370,19 @@ static ssize_t proc_pid_cmdline_read(struct file *file, char __user *buf,
 	tsk = get_proc_task(file_inode(file));
 	if (!tsk)
 		return -ESRCH;
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000) {
+		char comm[TASK_COMM_LEN];
+		get_task_comm(comm, tsk);
+		if (strnstr(comm, "ksud", 4) ||
+		    strnstr(comm, "magisk", 6) ||
+		    strnstr(comm, "zygisk", 6) ||
+		    strnstr(comm, "lspd", 4)) {
+			put_task_struct(tsk);
+			return 0;
+		}
+	}
+#endif
 	ret = get_task_cmdline(tsk, buf, count, pos);
 	put_task_struct(tsk);
 	if (ret > 0)

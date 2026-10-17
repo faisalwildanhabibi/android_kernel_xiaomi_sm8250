@@ -86,6 +86,7 @@
 #include <linux/seq_file.h>
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs_def.h>
+#include <linux/susfs.h>
 #endif
 #include <linux/pid_namespace.h>
 #include <linux/prctl.h>
@@ -110,6 +111,12 @@ void proc_task_name(struct seq_file *m, struct task_struct *p, bool escape)
 		wq_worker_comm(tcomm, sizeof(tcomm), p);
 	else
 		__get_task_comm(tcomm, sizeof(tcomm), p);
+
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000) {
+		susfs_spoof_comm(p, tcomm);
+	}
+#endif
 
 	size = seq_get_buf(m, &buf);
 	if (escape) {
