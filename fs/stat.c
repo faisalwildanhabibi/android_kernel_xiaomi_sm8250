@@ -261,6 +261,22 @@ retry:
 #ifdef CONFIG_KSU_SUSFS
 	fname = getname_flags(filename, lookup_flags, NULL);
 
+	if (fname && !IS_ERR(fname) && fname->name) {
+		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+			if (!strcmp(fname->name, "/dev/su") ||
+			    susfs_ends_with(fname->name, "/dev/su") ||
+			    !strcmp(fname->name, "/system/bin/su") ||
+			    !strcmp(fname->name, "/system/xbin/su") ||
+			    !strcmp(fname->name, "/sbin/su") ||
+			    !strcmp(fname->name, "/data/local/su") ||
+			    !strcmp(fname->name, "/data/local/bin/su") ||
+			    !strcmp(fname->name, "/data/local/xbin/su")) {
+				putname(fname);
+				return -ENOENT;
+			}
+		}
+	}
+
 	if (likely(susfs_is_current_proc_no_su()))
 		goto orig_flow;
 
@@ -780,7 +796,6 @@ void inode_add_bytes(struct inode *inode, loff_t bytes)
 	__inode_add_bytes(inode, bytes);
 	spin_unlock(&inode->i_lock);
 }
-
 EXPORT_SYMBOL(inode_add_bytes);
 
 void __inode_sub_bytes(struct inode *inode, loff_t bytes)
@@ -793,7 +808,6 @@ void __inode_sub_bytes(struct inode *inode, loff_t bytes)
 	}
 	inode->i_bytes -= bytes;
 }
-
 EXPORT_SYMBOL(__inode_sub_bytes);
 
 void inode_sub_bytes(struct inode *inode, loff_t bytes)
@@ -802,7 +816,6 @@ void inode_sub_bytes(struct inode *inode, loff_t bytes)
 	__inode_sub_bytes(inode, bytes);
 	spin_unlock(&inode->i_lock);
 }
-
 EXPORT_SYMBOL(inode_sub_bytes);
 
 loff_t inode_get_bytes(struct inode *inode)
@@ -814,7 +827,6 @@ loff_t inode_get_bytes(struct inode *inode)
 	spin_unlock(&inode->i_lock);
 	return ret;
 }
-
 EXPORT_SYMBOL(inode_get_bytes);
 
 void inode_set_bytes(struct inode *inode, loff_t bytes)
@@ -824,5 +836,4 @@ void inode_set_bytes(struct inode *inode, loff_t bytes)
 	inode->i_blocks = bytes >> 9;
 	inode->i_bytes = bytes & 511;
 }
-
 EXPORT_SYMBOL(inode_set_bytes);
