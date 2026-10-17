@@ -88,6 +88,9 @@
 #include <linux/scatterlist.h>
 
 #include <trace/events/tcp.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 
 #ifdef CONFIG_TCP_MD5SIG
 static int tcp_v4_md5_hash_hdr(char *md5_hash, const struct tcp_md5sig_key *key,
@@ -2300,6 +2303,13 @@ void *tcp_seq_next(struct seq_file *seq, void *v, loff_t *pos)
 	struct tcp_iter_state *st = seq->private;
 	void *rc = NULL;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000 && v != SEQ_START_TOKEN) {
+		struct inet_sock *inet = inet_sk(sk);
+		if (inet && susfs_is_sus_port(ntohs(inet->inet_sport)))
+			return 0;
+	}
+#endif
 	if (v == SEQ_START_TOKEN) {
 		rc = tcp_get_idx(seq, 0);
 		goto out;
