@@ -15,7 +15,8 @@
 #include <linux/proc_fs.h>
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs_def.h>
-#endif // #ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 
 #include "../mount.h"
 #include "internal.h"
@@ -256,9 +257,19 @@ static int proc_fd_link(struct dentry *dentry, struct path *path)
 		spin_lock(&files->file_lock);
 		fd_file = files_lookup_fd_rcu(files, fd);
 		if (fd_file) {
+#ifdef CONFIG_KSU_SUSFS
+			if (current_uid().val >= 10000 && susfs_is_sus_fd(fd_file)) {
+				ret = -ENOENT;
+			} else {
+				*path = fd_file->f_path;
+				path_get(&fd_file->f_path);
+				ret = 0;
+			}
+#else
 			*path = fd_file->f_path;
 			path_get(&fd_file->f_path);
 			ret = 0;
+#endif
 		}
 		spin_unlock(&files->file_lock);
 		put_files_struct(files);
@@ -346,6 +357,10 @@ static int proc_readfd_common(struct file *file, struct dir_context *ctx,
 		f = files_lookup_fd_rcu(files, fd);
 		if (!f)
 			continue;
+#ifdef CONFIG_KSU_SUSFS
+		if (current_uid().val >= 10000 && susfs_is_sus_fd(f))
+			continue;
+#endif
 		data.mode = f->f_mode;
 		rcu_read_unlock();
 		data.fd = fd;
