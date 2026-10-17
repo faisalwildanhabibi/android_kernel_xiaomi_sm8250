@@ -57,6 +57,9 @@
 #include <net/inet_ecn.h>
 #include <net/protocol.h>
 #include <net/xfrm.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #include <net/snmp.h>
 #include <net/dsfield.h>
 #include <net/timewait_sock.h>
@@ -1961,6 +1964,13 @@ static int tcp6_seq_show(struct seq_file *seq, void *v)
 	struct tcp_iter_state *st;
 	struct sock *sk = v;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000 && v != SEQ_START_TOKEN) {
+		struct inet_sock *inet = inet_sk(sk);
+		if (inet && susfs_is_sus_port(ntohs(inet->inet_sport)))
+			return 0;
+	}
+#endif
 	if (v == SEQ_START_TOKEN) {
 		seq_puts(seq,
 			 "  sl  "
