@@ -27,11 +27,10 @@ on:
       - 'anykernel_template.sh'
       - 'scripts/**'
       - 'arch/arm64/configs/**'
-      - 'fs/susfs.c'
+      - 'fs/**'
       - 'include/linux/susfs.h'
       - 'net/unix/**'
       - 'security/selinux/**'
-      - 'fs/proc/**'
       - '.github/workflows/build.yml'
       - '.trigger_ci'
 
