@@ -93,6 +93,45 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
             sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
         fi
+        if [ -f "KernelSU/kernel/Kconfig" ]; then
+            cat >> KernelSU/kernel/Kconfig << 'EOF'
+
+config KSU_SUSFS_SUS_NET
+	bool "Enable SuSFS Network and Port Concealment"
+	depends on KSU_SUSFS
+	default y
+
+config KSU_SUSFS_SUS_FD
+	bool "Enable SuSFS File Descriptor Isolation"
+	depends on KSU_SUSFS
+	default y
+
+config KSU_SUSFS_AUTO_SPOOF_SEPOLICY
+	bool "Enable SuSFS Auto Sepolicy Spoofing"
+	depends on KSU_SUSFS
+	default y
+
+config KSU_SUSFS_FILTER_ENV
+	bool "Enable SuSFS Process Environ Scrubbing"
+	depends on KSU_SUSFS
+	default y
+
+config KSU_SUSFS_SPOOF_COMM
+	bool "Enable SuSFS Process Comm Spoofing"
+	depends on KSU_SUSFS
+	default y
+
+config KSU_SUSFS_SUS_SU
+	bool "Enable SuSFS Root Binary and Dev Node Concealment"
+	depends on KSU_SUSFS
+	default y
+
+config KSU_SUSFS_TRY_UMOUNT
+	bool "Enable SuSFS Try Umount"
+	depends on KSU_SUSFS
+	default y
+EOF
+        fi
     else
         echo "[-] [ISO 27001 / SLSA ABORT] Failed to retrieve valid ReSukiSU setup script!"
         rm -f "$KSU_SETUP_TMP"
@@ -385,6 +424,8 @@ build_target() {
             -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY \
             -e KSU_SUSFS_FILTER_ENV \
             -e KSU_SUSFS_SPOOF_COMM \
+            -e KSU_SUSFS_SUS_SU \
+            -e KSU_SUSFS_TRY_UMOUNT \
             -d KSU_SUSFS_ENABLE_LOG \
             -d CFI \
             -d CFI_CLANG \
