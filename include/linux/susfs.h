@@ -239,6 +239,7 @@ void susfs_add_open_redirect(void __user **user_info);
 /* sus_map */
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 void susfs_add_sus_map(void __user **user_info);
+bool susfs_is_sus_map_file(struct file *file);
 #endif
 
 void susfs_add_sus_port(void __user **user_info);
@@ -254,6 +255,7 @@ void susfs_start_sdcard_monitor_fn(void);
 
 /* susfs_init */
 void susfs_init(void);
+void susfs_reload_dynamic_socks(void);
 
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_sus_unix_socket(const char *sun, int len);
