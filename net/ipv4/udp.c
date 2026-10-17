@@ -112,6 +112,9 @@
 #include <linux/static_key.h>
 #include <linux/btf_ids.h>
 #include <trace/events/skb.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #include <net/busy_poll.h>
 #include "udp_impl.h"
 #include <net/sock_reuseport.h>
@@ -2876,6 +2879,13 @@ void *udp_seq_next(struct seq_file *seq, void *v, loff_t *pos)
 {
 	struct sock *sk;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000 && v != SEQ_START_TOKEN) {
+		struct inet_sock *inet = inet_sk((struct sock *)v);
+		if (inet && susfs_is_sus_port(ntohs(inet->inet_sport)))
+			return 0;
+	}
+#endif
 	if (v == SEQ_START_TOKEN)
 		sk = udp_get_idx(seq, 0);
 	else
