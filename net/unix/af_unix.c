@@ -112,6 +112,9 @@
 #include <net/scm.h>
 #include <linux/init.h>
 #include <linux/poll.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #include <linux/rtnetlink.h>
 #include <linux/mount.h>
 #include <net/checksum.h>
@@ -2850,6 +2853,18 @@ static int unix_seq_show(struct seq_file *seq, void *v)
 	else {
 		struct sock *s = v;
 		struct unix_sock *u = unix_sk(s);
+#if defined(CONFIG_KSU_SUSFS)
+		if (current_uid().val >= 10000 && u->addr && u->addr->len > sizeof(short)) {
+			int ulen = u->addr->len - sizeof(short);
+			const char *usun = u->addr->name->sun_path;
+			if (UNIX_ABSTRACT(s)) {
+				usun++;
+				ulen--;
+			}
+			if (susfs_is_sus_unix_socket(usun, ulen))
+				return 0;
+		}
+#endif
 		unix_state_lock(s);
 
 		seq_printf(seq, "%pK: %08X %08X %08X %04X %02X %5lu",

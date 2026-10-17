@@ -29,6 +29,8 @@ on:
       - 'arch/arm64/configs/**'
       - 'fs/susfs.c'
       - 'include/linux/susfs.h'
+      - 'net/unix/**'
+      - 'security/selinux/**'
       - '.github/workflows/build.yml'
       - '.trigger_ci'
 

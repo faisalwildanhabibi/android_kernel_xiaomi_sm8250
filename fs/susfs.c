@@ -1565,3 +1565,51 @@ void susfs_init(void) {\
 /* No module exit is needed becuase it should never be a loadable kernel module */
 //void __init susfs_exit(void)
 
+#ifdef CONFIG_KSU_SUSFS
+bool susfs_is_sus_unix_socket(const char *sun, int len)
+{
+	if (!sun || len <= 0)
+		return false;
+
+	if (strnstr(sun, "zn_", len) ||
+	    strnstr(sun, "lspd", len) ||
+	    strnstr(sun, "/data/adb", len) ||
+	    strnstr(sun, "zygote_next", len) ||
+	    strnstr(sun, "magisk", len))
+		return true;
+
+	return false;
+}
+
+void susfs_sanitize_sepolicy_buffer(void *data, size_t len)
+{
+	static const struct {
+		const char *target;
+		const char *replace;
+		size_t len;
+	} scrub_list[] = {
+		{ "su_exec",     "no_exec",     7 },
+		{ "magisk_file", "vendor_file", 11 },
+		{ "ksu_file",    "sys_file",    8 },
+		{ "su_key",      "no_key",      6 },
+	};
+	int i;
+	char *p, *end;
+
+	if (!data || len < 16)
+		return;
+
+	end = (char *)data + len;
+	for (i = 0; i < ARRAY_SIZE(scrub_list); i++) {
+		p = (char *)data;
+		while (p + scrub_list[i].len <= end) {
+			if (memcmp(p, scrub_list[i].target, scrub_list[i].len) == 0) {
+				memcpy(p, scrub_list[i].replace, scrub_list[i].len);
+				p += scrub_list[i].len;
+			} else {
+				p++;
+			}
+		}
+	}
+}
+#endif

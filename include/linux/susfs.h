@@ -240,4 +240,9 @@ void susfs_start_sdcard_monitor_fn(void);
 /* susfs_init */
 void susfs_init(void);
 
+#ifdef CONFIG_KSU_SUSFS
+bool susfs_is_sus_unix_socket(const char *sun, int len);
+void susfs_sanitize_sepolicy_buffer(void *data, size_t len);
+#endif
+
 #endif

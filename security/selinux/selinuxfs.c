@@ -42,6 +42,9 @@
 #include "security.h"
 #include "objsec.h"
 #include "conditional.h"
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 
 enum sel_inos {
 	SEL_ROOT_INO = 2,
@@ -413,6 +416,12 @@ static int sel_open_policy(struct inode *inode, struct file *filp)
 	rc = security_read_policy(state, &plm->data, &plm->len);
 	if (rc)
 		goto err;
+
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000) {
+		susfs_sanitize_sepolicy_buffer(plm->data, plm->len);
+	}
+#endif
 
 	fsi->policy_opened = 1;
 
