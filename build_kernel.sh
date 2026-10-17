@@ -380,6 +380,11 @@ build_target() {
             -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
             -e KSU_SUSFS_OPEN_REDIRECT \
             -e KSU_SUSFS_SUS_MAP \
+            -e KSU_SUSFS_SUS_NET \
+            -e KSU_SUSFS_SUS_FD \
+            -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY \
+            -e KSU_SUSFS_FILTER_ENV \
+            -e KSU_SUSFS_SPOOF_COMM \
             -d KSU_SUSFS_ENABLE_LOG \
             -d CFI \
             -d CFI_CLANG \
