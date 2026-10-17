@@ -1693,4 +1693,190 @@ void susfs_sanitize_sepolicy_buffer(void *data, size_t len)
 		}
 	}
 }
+
+#define SUSFS_MAX_CUSTOM_PORTS 32
+static unsigned short susfs_custom_ports[SUSFS_MAX_CUSTOM_PORTS] = {
+	2403,  /* ADB wireless Xiaomi/AOSP */
+	5555,  /* ADB standard TCP */
+	27042, /* Frida server default */
+};
+static int susfs_custom_ports_count = 3;
+static DEFINE_SPINLOCK(susfs_ports_lock);
+
+bool susfs_is_sus_port(unsigned short port)
+{
+	unsigned long flags;
+	int i;
+
+	if (port == 0)
+		return false;
+
+	spin_lock_irqsave(&susfs_ports_lock, flags);
+	for (i = 0; i < susfs_custom_ports_count; i++) {
+		if (susfs_custom_ports[i] == port) {
+			spin_unlock_irqrestore(&susfs_ports_lock, flags);
+			return true;
+		}
+	}
+	spin_unlock_irqrestore(&susfs_ports_lock, flags);
+	return false;
+}
+
+void susfs_add_sus_port(void __user **user_info)
+{
+	struct st_susfs_sus_port info = {0};
+	unsigned long flags;
+	int i;
+
+	if (copy_from_user(&info, (struct st_susfs_sus_port __user*)*user_info, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out_copy;
+	}
+
+	if (info.target_port == 0) {
+		info.err = -EINVAL;
+		goto out_copy;
+	}
+
+	spin_lock_irqsave(&susfs_ports_lock, flags);
+	for (i = 0; i < susfs_custom_ports_count; i++) {
+		if (susfs_custom_ports[i] == info.target_port) {
+			spin_unlock_irqrestore(&susfs_ports_lock, flags);
+			info.err = 0;
+			goto out_copy;
+		}
+	}
+	if (susfs_custom_ports_count < SUSFS_MAX_CUSTOM_PORTS) {
+		susfs_custom_ports[susfs_custom_ports_count++] = info.target_port;
+		info.err = 0;
+	} else {
+		info.err = -ENOSPC;
+	}
+	spin_unlock_irqrestore(&susfs_ports_lock, flags);
+
+out_copy:
+	if (copy_to_user(&((struct st_susfs_sus_port __user*)*user_info)->err, &info.err, sizeof(info.err)))
+		info.err = -EFAULT;
+}
+
+void susfs_add_sus_unix_socket(void __user **user_info)
+{
+	struct st_susfs_sus_unix_socket info = {0};
+	unsigned long flags;
+	int i;
+
+	if (copy_from_user(&info, (struct st_susfs_sus_unix_socket __user*)*user_info, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out_copy;
+	}
+
+	if (info.target_pattern[0] == '\0') {
+		info.err = -EINVAL;
+		goto out_copy;
+	}
+
+	spin_lock_irqsave(&susfs_socks_lock, flags);
+	for (i = 0; i < susfs_custom_socks_count; i++) {
+		if (!strcmp(susfs_custom_socks[i], info.target_pattern)) {
+			spin_unlock_irqrestore(&susfs_socks_lock, flags);
+			info.err = 0;
+			goto out_copy;
+		}
+	}
+	if (susfs_custom_socks_count < SUSFS_MAX_CUSTOM_SOCKS) {
+		strlcpy(susfs_custom_socks[susfs_custom_socks_count++], info.target_pattern, SUSFS_SOCK_PATTERN_LEN);
+		info.err = 0;
+	} else {
+		info.err = -ENOSPC;
+	}
+	spin_unlock_irqrestore(&susfs_socks_lock, flags);
+
+out_copy:
+	if (copy_to_user(&((struct st_susfs_sus_unix_socket __user*)*user_info)->err, &info.err, sizeof(info.err)))
+		info.err = -EFAULT;
+}
+
+void susfs_filter_environ_buffer(char *buf, size_t *len)
+{
+	static const char * const bad_env[] = {
+		"MAGISK_INJ",
+		"KSU_INJ",
+		"KSU_EXTRA",
+		"LSP_DEX2OAT",
+	};
+	char *p, *end;
+	int i;
+
+	if (!buf || !len || *len == 0)
+		return;
+
+	p = buf;
+	end = buf + *len;
+	while (p < end) {
+		size_t item_len = strlen(p);
+		bool drop = false;
+
+		for (i = 0; i < ARRAY_SIZE(bad_env); i++) {
+			if (susfs_starts_with(p, bad_env[i])) {
+				drop = true;
+				break;
+			}
+		}
+
+		if (drop) {
+			size_t rem = end - (p + item_len + 1);
+			memmove(p, p + item_len + 1, rem);
+			*len -= (item_len + 1);
+			end = buf + *len;
+		} else {
+			p += item_len + 1;
+		}
+	}
+}
+
+void susfs_spoof_comm(struct task_struct *task, char *buf)
+{
+	static const char * const sus_comms[] = {
+		"zygisk",
+		"lspd",
+		"magisk",
+		"ksud",
+	};
+	int i;
+
+	if (!buf)
+		return;
+
+	for (i = 0; i < ARRAY_SIZE(sus_comms); i++) {
+		if (strnstr(buf, sus_comms[i], TASK_COMM_LEN)) {
+			strlcpy(buf, "Jit thread pool", TASK_COMM_LEN);
+			return;
+		}
+	}
+}
+
+bool susfs_is_sus_fd(struct file *file)
+{
+	struct inode *inode;
+
+	if (!file)
+		return false;
+
+	inode = file_inode(file);
+	if (!inode)
+		return false;
+
+	if (test_bit(AS_FLAGS_SUS_PATH, &inode->i_state))
+		return true;
+
+	if (file->f_path.dentry && file->f_path.dentry->d_name.name) {
+		const char *name = file->f_path.dentry->d_name.name;
+		if (strnstr(name, "usap_pool", 9) ||
+		    strnstr(name, "zygisk", 6) ||
+		    strnstr(name, "lspd", 4))
+			return true;
+	}
+
+	return false;
+}
 #endif
