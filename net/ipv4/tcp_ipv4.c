@@ -2303,13 +2303,6 @@ void *tcp_seq_next(struct seq_file *seq, void *v, loff_t *pos)
 	struct tcp_iter_state *st = seq->private;
 	void *rc = NULL;
 
-#ifdef CONFIG_KSU_SUSFS
-	if (current_uid().val >= 10000 && v != SEQ_START_TOKEN) {
-		struct inet_sock *inet = inet_sk(sk);
-		if (inet && susfs_is_sus_port(ntohs(inet->inet_sport)))
-			return 0;
-	}
-#endif
 	if (v == SEQ_START_TOKEN) {
 		rc = tcp_get_idx(seq, 0);
 		goto out;
@@ -2470,6 +2463,14 @@ static int tcp4_seq_show(struct seq_file *seq, void *v)
 {
 	struct tcp_iter_state *st;
 	struct sock *sk = v;
+
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000 && v != SEQ_START_TOKEN) {
+		struct inet_sock *inet = inet_sk(sk);
+		if (inet && susfs_is_sus_port(ntohs(inet->inet_sport)))
+			return 0;
+	}
+#endif
 
 	seq_setwidth(seq, TMPSZ - 1);
 	if (v == SEQ_START_TOKEN) {
