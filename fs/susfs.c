@@ -1202,6 +1202,32 @@ out_copy_to_user:
 	}
 	SUSFS_LOGI("CMD_SUSFS_ADD_SUS_MAP -> ret: %d\n", info.err);
 }
+
+bool susfs_is_sus_map_file(struct file *file)
+{
+	struct inode *inode;
+	const char *name;
+
+	if (!file)
+		return false;
+
+	inode = file_inode(file);
+	if (inode && test_bit(AS_FLAGS_SUS_MAP, &inode->i_state))
+		return true;
+
+	if (file->f_path.dentry) {
+		name = file->f_path.dentry->d_name.name;
+		if (name) {
+			if (strnstr(name, "frida", 32) ||
+			    strnstr(name, "neo_zygisk", 32) ||
+			    strnstr(name, "libriru", 32) ||
+			    strnstr(name, "usap_pool", 32))
+				return true;
+		}
+	}
+
+	return false;
+}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 
 /* susfs avc log spoofing */
@@ -1250,8 +1276,8 @@ void susfs_get_enabled_features(void __user **user_info) {
 	size_t copied_size = 0;
 
 	if (!info) {
-		info->err = -ENOMEM;
-		goto out_copy_to_user;
+		SUSFS_LOGE("failed to kzalloc for st_susfs_enabled_features\n");
+		return;
 	}
 
 	if (copy_from_user(info, (struct st_susfs_enabled_features __user*)*user_info, sizeof(struct st_susfs_enabled_features))) {
@@ -1303,6 +1329,31 @@ void susfs_get_enabled_features(void __user **user_info) {
 #endif
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 	info->err = copy_config_to_buf("CONFIG_KSU_SUSFS_SUS_MAP\n", buf_ptr, &copied_size, SUSFS_ENABLED_FEATURES_SIZE);
+	if (info->err) goto out_copy_to_user;
+	buf_ptr = info->enabled_features + copied_size;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_NET
+	info->err = copy_config_to_buf("CONFIG_KSU_SUSFS_SUS_NET\n", buf_ptr, &copied_size, SUSFS_ENABLED_FEATURES_SIZE);
+	if (info->err) goto out_copy_to_user;
+	buf_ptr = info->enabled_features + copied_size;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_FD
+	info->err = copy_config_to_buf("CONFIG_KSU_SUSFS_SUS_FD\n", buf_ptr, &copied_size, SUSFS_ENABLED_FEATURES_SIZE);
+	if (info->err) goto out_copy_to_user;
+	buf_ptr = info->enabled_features + copied_size;
+#endif
+#ifdef CONFIG_KSU_SUSFS_FILTER_ENV
+	info->err = copy_config_to_buf("CONFIG_KSU_SUSFS_FILTER_ENV\n", buf_ptr, &copied_size, SUSFS_ENABLED_FEATURES_SIZE);
+	if (info->err) goto out_copy_to_user;
+	buf_ptr = info->enabled_features + copied_size;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_COMM
+	info->err = copy_config_to_buf("CONFIG_KSU_SUSFS_SPOOF_COMM\n", buf_ptr, &copied_size, SUSFS_ENABLED_FEATURES_SIZE);
+	if (info->err) goto out_copy_to_user;
+	buf_ptr = info->enabled_features + copied_size;
+#endif
+#ifdef CONFIG_KSU_SUSFS_AUTO_SPOOF_SEPOLICY
+	info->err = copy_config_to_buf("CONFIG_KSU_SUSFS_AUTO_SPOOF_SEPOLICY\n", buf_ptr, &copied_size, SUSFS_ENABLED_FEATURES_SIZE);
 	if (info->err) goto out_copy_to_user;
 	buf_ptr = info->enabled_features + copied_size;
 #endif
@@ -1617,6 +1668,11 @@ static void susfs_load_dynamic_socks(struct work_struct *work)
 
 	kfree(buf);
 	pr_info("susfs: dynamic socket patterns loaded: %d entries\n", count);
+}
+
+void susfs_reload_dynamic_socks(void)
+{
+	susfs_load_dynamic_socks(NULL);
 }
 
 /* susfs_init */
