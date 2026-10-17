@@ -97,7 +97,10 @@
 #include <linux/cpufreq_times.h>
 #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
 #include <linux/susfs_def.h>
-#endif // #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#endif
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #include <trace/events/oom.h>
 #include "internal.h"
 #include "fd.h"
@@ -969,6 +972,14 @@ static ssize_t environ_read(struct file *file, char __user *buf,
 			break;
 		}
 
+#ifdef CONFIG_KSU_SUSFS
+		if (current_uid().val >= 10000) {
+			size_t cur_len = (size_t)retval;
+			susfs_filter_environ_buffer(page, &cur_len);
+			retval = (int)cur_len;
+		}
+#endif
+
 		if (copy_to_user(buf, page, retval)) {
 			ret = -EFAULT;
 			break;
@@ -1824,8 +1835,21 @@ static int comm_show(struct seq_file *m, void *v)
 	if (!p)
 		return -ESRCH;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (current_uid().val >= 10000) {
+		char comm_buf[TASK_COMM_LEN];
+		get_task_comm(comm_buf, p);
+		susfs_spoof_comm(p, comm_buf);
+		seq_puts(m, comm_buf);
+		seq_putc(m, '\n');
+	} else {
+		proc_task_name(m, p, false);
+		seq_putc(m, '\n');
+	}
+#else
 	proc_task_name(m, p, false);
 	seq_putc(m, '\n');
+#endif
 
 	put_task_struct(p);
 
