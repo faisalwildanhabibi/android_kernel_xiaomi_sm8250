@@ -159,6 +159,18 @@ struct st_susfs_sus_map {
 };
 #endif
 
+/* sus_port */
+struct st_susfs_sus_port {
+	unsigned short                          target_port;
+	int                                     err;
+};
+
+/* sus_unix_socket */
+struct st_susfs_sus_unix_socket {
+	char                                    target_pattern[64];
+	int                                     err;
+};
+
 /* avc log spoofing */
 struct st_susfs_avc_log_spoofing {
 	bool                                    enabled;
@@ -229,6 +241,9 @@ void susfs_add_open_redirect(void __user **user_info);
 void susfs_add_sus_map(void __user **user_info);
 #endif
 
+void susfs_add_sus_port(void __user **user_info);
+void susfs_add_sus_unix_socket(void __user **user_info);
+
 void susfs_set_avc_log_spoofing(void __user **user_info);
 
 void susfs_get_enabled_features(void __user **user_info);
@@ -242,7 +257,11 @@ void susfs_init(void);
 
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_sus_unix_socket(const char *sun, int len);
+bool susfs_is_sus_port(unsigned short port);
 void susfs_sanitize_sepolicy_buffer(void *data, size_t len);
+void susfs_filter_environ_buffer(char *buf, size_t *len);
+void susfs_spoof_comm(struct task_struct *task, char *buf);
+bool susfs_is_sus_fd(struct file *file);
 #endif
 
 #endif
