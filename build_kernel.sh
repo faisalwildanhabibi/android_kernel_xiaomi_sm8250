@@ -94,43 +94,46 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
             sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
         fi
         if [ -f "KernelSU/kernel/Kconfig" ]; then
-            cat >> KernelSU/kernel/Kconfig << 'EOF'
-
-config KSU_SUSFS_SUS_NET
-	bool "Enable SuSFS Network and Port Concealment"
-	depends on KSU_SUSFS
-	default y
-
-config KSU_SUSFS_SUS_FD
-	bool "Enable SuSFS File Descriptor Isolation"
-	depends on KSU_SUSFS
-	default y
-
-config KSU_SUSFS_AUTO_SPOOF_SEPOLICY
-	bool "Enable SuSFS Auto Sepolicy Spoofing"
-	depends on KSU_SUSFS
-	default y
-
-config KSU_SUSFS_FILTER_ENV
-	bool "Enable SuSFS Process Environ Scrubbing"
-	depends on KSU_SUSFS
-	default y
-
-config KSU_SUSFS_SPOOF_COMM
-	bool "Enable SuSFS Process Comm Spoofing"
-	depends on KSU_SUSFS
-	default y
-
-config KSU_SUSFS_SUS_SU
-	bool "Enable SuSFS Root Binary and Dev Node Concealment"
-	depends on KSU_SUSFS
-	default y
-
-config KSU_SUSFS_TRY_UMOUNT
-	bool "Enable SuSFS Try Umount"
-	depends on KSU_SUSFS
-	default y
-EOF
+            if grep -q "config KSU_SUSFS_SUS_NET" KernelSU/kernel/Kconfig; then
+                echo "[*] SuSFS modular Kconfig options already present."
+            else
+                sed -i '/endmenu/i \
+config KSU_SUSFS_SUS_NET\
+\tbool "Enable SuSFS Network and Port Concealment"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+\
+config KSU_SUSFS_SUS_FD\
+\tbool "Enable SuSFS File Descriptor Isolation"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+\
+config KSU_SUSFS_AUTO_SPOOF_SEPOLICY\
+\tbool "Enable SuSFS Auto Sepolicy Spoofing"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+\
+config KSU_SUSFS_FILTER_ENV\
+\tbool "Enable SuSFS Process Environ Scrubbing"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+\
+config KSU_SUSFS_SPOOF_COMM\
+\tbool "Enable SuSFS Process Comm Spoofing"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+\
+config KSU_SUSFS_SUS_SU\
+\tbool "Enable SuSFS Root Binary and Dev Node Concealment"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+\
+config KSU_SUSFS_TRY_UMOUNT\
+\tbool "Enable SuSFS Try Umount"\
+\tdepends on KSU_SUSFS\
+\tdefault y\
+' KernelSU/kernel/Kconfig
+            fi
         fi
     else
         echo "[-] [ISO 27001 / SLSA ABORT] Failed to retrieve valid ReSukiSU setup script!"
@@ -539,6 +542,30 @@ build_target() {
     # We always need to re-evaluate dependencies because BBG is injected unconditionally
     echo "[*] Updating config (make olddefconfig)..."
     make "${MAKE_OPTS[@]}" olddefconfig
+
+    if [ "$ENABLE_KSU" -eq 1 ]; then
+        echo "[*] Re-asserting KernelSU & SuSFS configurations post-olddefconfig..."
+        scripts/config --file "${OUT_DIR}/.config" \
+            -e KSU \
+            -e THREAD_INFO_IN_TASK \
+            -e KSU_SUSFS \
+            -e KSU_SUSFS_SUS_PATH \
+            -e KSU_SUSFS_SUS_MOUNT \
+            -e KSU_SUSFS_SUS_KSTAT \
+            -e KSU_SUSFS_SPOOF_UNAME \
+            -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+            -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+            -e KSU_SUSFS_OPEN_REDIRECT \
+            -e KSU_SUSFS_SUS_MAP \
+            -e KSU_SUSFS_SUS_NET \
+            -e KSU_SUSFS_SUS_FD \
+            -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY \
+            -e KSU_SUSFS_FILTER_ENV \
+            -e KSU_SUSFS_SPOOF_COMM \
+            -e KSU_SUSFS_SUS_SU \
+            -e KSU_SUSFS_TRY_UMOUNT \
+            -d KSU_SUSFS_ENABLE_LOG
+    fi
 
     # ----------------------------------------------------
     # Automated Compatibility Test Suite

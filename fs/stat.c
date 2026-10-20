@@ -263,14 +263,7 @@ retry:
 
 	if (fname && !IS_ERR(fname) && fname->name) {
 		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
-			if (!strcmp(fname->name, "/dev/su") ||
-			    susfs_ends_with(fname->name, "/dev/su") ||
-			    !strcmp(fname->name, "/system/bin/su") ||
-			    !strcmp(fname->name, "/system/xbin/su") ||
-			    !strcmp(fname->name, "/sbin/su") ||
-			    !strcmp(fname->name, "/data/local/su") ||
-			    !strcmp(fname->name, "/data/local/bin/su") ||
-			    !strcmp(fname->name, "/data/local/xbin/su")) {
+			if (susfs_is_sus_su_path(fname->name)) {
 				putname(fname);
 				return -ENOENT;
 			}
@@ -496,6 +489,19 @@ static int do_readlinkat(int dfd, const char __user *pathname,
 
 	if (bufsiz <= 0)
 		return -EINVAL;
+
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		struct filename *tmp_name = getname(pathname);
+		if (!IS_ERR(tmp_name)) {
+			if (tmp_name->name && susfs_is_sus_su_path(tmp_name->name)) {
+				putname(tmp_name);
+				return -ENOENT;
+			}
+			putname(tmp_name);
+		}
+	}
+#endif
 
 retry:
 	error = user_path_at_empty(dfd, pathname, lookup_flags, &path, &empty);

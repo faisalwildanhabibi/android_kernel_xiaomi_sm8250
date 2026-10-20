@@ -115,6 +115,26 @@ static inline bool susfs_ends_with(const char *str, const char *suffix) {
 	return !strcmp(str + str_len - suffix_len, suffix);
 }
 
+static inline bool susfs_is_sus_su_path(const char *name) {
+	if (!name)
+		return false;
+
+	if (!strcmp(name, "su"))
+		return true;
+
+	if (susfs_ends_with(name, "/su")) {
+		if (strstr(name, "dev") ||
+		    strstr(name, "bin") ||
+		    strstr(name, "sbin") ||
+		    strstr(name, "local") ||
+		    strstr(name, "xbin") ||
+		    strlen(name) <= 16)
+			return true;
+	}
+
+	return false;
+}
+
 /* From KernelSU */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
 typedef const struct qstr *susfs_fname_t;

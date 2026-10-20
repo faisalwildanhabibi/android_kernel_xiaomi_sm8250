@@ -423,14 +423,7 @@ retry:
 
 	if (fname && !IS_ERR(fname) && fname->name) {
 		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
-			if (!strcmp(fname->name, "/dev/su") ||
-			    susfs_ends_with(fname->name, "/dev/su") ||
-			    !strcmp(fname->name, "/system/bin/su") ||
-			    !strcmp(fname->name, "/system/xbin/su") ||
-			    !strcmp(fname->name, "/sbin/su") ||
-			    !strcmp(fname->name, "/data/local/su") ||
-			    !strcmp(fname->name, "/data/local/bin/su") ||
-			    !strcmp(fname->name, "/data/local/xbin/su")) {
+			if (susfs_is_sus_su_path(fname->name)) {
 				putname(fname);
 				revert_creds(old_cred);
 				put_cred(override_cred);
@@ -1155,14 +1148,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 #ifdef CONFIG_KSU_SUSFS
 	if (tmp && !IS_ERR(tmp) && tmp->name) {
 		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
-			if (!strcmp(tmp->name, "/dev/su") ||
-			    susfs_ends_with(tmp->name, "/dev/su") ||
-			    !strcmp(tmp->name, "/system/bin/su") ||
-			    !strcmp(tmp->name, "/system/xbin/su") ||
-			    !strcmp(tmp->name, "/sbin/su") ||
-			    !strcmp(tmp->name, "/data/local/su") ||
-			    !strcmp(tmp->name, "/data/local/bin/su") ||
-			    !strcmp(tmp->name, "/data/local/xbin/su")) {
+			if (susfs_is_sus_su_path(tmp->name)) {
 				putname(tmp);
 				return -ENOENT;
 			}
