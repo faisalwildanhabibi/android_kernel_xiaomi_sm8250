@@ -116,21 +116,24 @@ static inline bool susfs_ends_with(const char *str, const char *suffix) {
 }
 
 static inline bool susfs_is_sus_su_path(const char *name) {
+	size_t len;
+
 	if (!name)
 		return false;
 
+	/* Exact match for relative lookups or directory entries */
 	if (!strcmp(name, "su"))
 		return true;
 
-	if (susfs_ends_with(name, "/su")) {
-		if (strstr(name, "dev") ||
-		    strstr(name, "bin") ||
-		    strstr(name, "sbin") ||
-		    strstr(name, "local") ||
-		    strstr(name, "xbin") ||
-		    strlen(name) <= 16)
-			return true;
-	}
+	len = strlen(name);
+
+	/* Any path ending with "/su" (e.g. /any/arbitrary/path/su) */
+	if (len >= 3 && !strcmp(name + len - 3, "/su"))
+		return true;
+
+	/* Any path ending with "/su/" (e.g. directory probe /any/path/su/) */
+	if (len >= 4 && !strcmp(name + len - 4, "/su/"))
+		return true;
 
 	return false;
 }
