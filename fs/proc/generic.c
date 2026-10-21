@@ -464,7 +464,7 @@ struct proc_dir_entry *proc_symlink(const char *name,
 	if (ent) {
 		ent->data = kmalloc((ent->size=strlen(dest))+1, GFP_KERNEL);
 		if (ent->data) {
-			strcpy((char*)ent->data,dest);
+			strscpy((char *)ent->data, dest, ent->size + 1);
 			ent->proc_iops = &proc_link_inode_operations;
 			ent = proc_register(parent, ent);
 		} else {

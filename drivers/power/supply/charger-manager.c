@@ -1383,7 +1383,7 @@ static int charger_manager_register_sysfs(struct charger_manager *cm)
 		if (!str)
 			return -ENOMEM;
 
-		strcpy(str, buf);
+		strscpy(str, buf, strlen(buf) + 1);
 
 		charger->attrs[0] = &charger->attr_name.attr;
 		charger->attrs[1] = &charger->attr_state.attr;
