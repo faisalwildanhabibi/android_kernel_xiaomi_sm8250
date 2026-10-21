@@ -1227,7 +1227,7 @@ static int inet_gifconf(struct net_device *dev, char __user *buf, int len, int s
 		if (len < size)
 			break;
 		memset(&ifr, 0, sizeof(struct ifreq));
-		strcpy(ifr.ifr_name, ifa->ifa_label);
+		strscpy(ifr.ifr_name, ifa->ifa_label, IFNAMSIZ);
 
 		(*(struct sockaddr_in *)&ifr.ifr_addr).sin_family = AF_INET;
 		(*(struct sockaddr_in *)&ifr.ifr_addr).sin_addr.s_addr =

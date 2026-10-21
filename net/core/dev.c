@@ -917,7 +917,7 @@ int netdev_get_name(struct net *net, char *name, int ifindex)
 		goto out;
 	}
 
-	strcpy(name, dev->name);
+	strscpy(name, dev->name, IFNAMSIZ);
 
 	ret = 0;
 out:
@@ -9841,7 +9841,7 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
 	if (netif_alloc_rx_queues(dev))
 		goto free_all;
 
-	strcpy(dev->name, name);
+	strscpy(dev->name, name, IFNAMSIZ);
 	dev->name_assign_type = name_assign_type;
 	dev->group = INIT_NETDEV_GROUP;
 	if (!dev->ethtool_ops)

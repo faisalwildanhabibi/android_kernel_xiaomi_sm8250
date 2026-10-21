@@ -24,6 +24,7 @@
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 extern bool susfs_is_current_ksu_domain(void);
 extern struct static_key_false susfs_is_hide_sus_mnts_for_non_su_procs_enabled;
+extern int susfs_get_non_sus_mnt_id_from_mnt(struct mount *orig_mnt);
 #endif
 
 static __poll_t mounts_poll(struct file *file, poll_table *wait)
@@ -298,7 +299,7 @@ static int susfs_show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
 	if (r->mnt_id >= DEFAULT_KSU_MNT_ID)
 		return 0;
 
-	seq_printf(m, "%i %i %u:%u ", r->mnt_id, r->mnt_parent->mnt_id,
+	seq_printf(m, "%i %i %u:%u ", r->mnt_id, susfs_get_non_sus_mnt_id_from_mnt(r->mnt_parent),
 		   MAJOR(sb->s_dev), MINOR(sb->s_dev));
 	if (sb->s_op->show_path) {
 		err = sb->s_op->show_path(m, mnt->mnt_root);

@@ -1100,7 +1100,7 @@ static int cgroup1_remount(struct kernfs_root *kf_root, int *flags, char *data)
 
 	if (opts.release_agent) {
 		spin_lock(&release_agent_path_lock);
-		strcpy(root->release_agent_path, opts.release_agent);
+		strscpy(root->release_agent_path, opts.release_agent, sizeof(root->release_agent_path));
 		spin_unlock(&release_agent_path_lock);
 	}
 

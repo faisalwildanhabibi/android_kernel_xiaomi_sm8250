@@ -1269,7 +1269,7 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 			!strncmp(current->comm, "netbpfload", 10) ||
 			!strncmp(current->comm, "netd", 4) ||
 			!strncmp(current->comm, "uprobestats", 11)) {
-			strcpy(tmp.release, "5.15.207");
+			strscpy(tmp.release, "5.15.207", sizeof(tmp.release));
 		}
 	}
 	up_read(&uts_sem);

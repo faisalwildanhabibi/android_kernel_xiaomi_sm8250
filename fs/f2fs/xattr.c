@@ -820,9 +820,9 @@ int f2fs_setxattr(struct inode *inode, int index, const char *name,
 int f2fs_init_xattr_caches(struct f2fs_sb_info *sbi)
 {
 	dev_t dev = sbi->sb->s_bdev->bd_dev;
-	char slab_name[32];
+	char slab_name[48];
 
-	sprintf(slab_name, "f2fs_xattr_entry-%u:%u", MAJOR(dev), MINOR(dev));
+	snprintf(slab_name, sizeof(slab_name), "f2fs_xattr_entry-%u:%u", MAJOR(dev), MINOR(dev));
 
 	sbi->inline_xattr_slab_size = F2FS_OPTION(sbi).inline_xattr_size *
 					sizeof(__le32) + XATTR_PADDING_SIZE;

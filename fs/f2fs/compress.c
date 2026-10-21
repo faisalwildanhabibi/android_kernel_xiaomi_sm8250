@@ -1944,12 +1944,12 @@ void f2fs_destroy_compress_inode(struct f2fs_sb_info *sbi)
 int f2fs_init_page_array_cache(struct f2fs_sb_info *sbi)
 {
 	dev_t dev = sbi->sb->s_bdev->bd_dev;
-	char slab_name[32];
+	char slab_name[48];
 
 	if (!f2fs_sb_has_compression(sbi))
 		return 0;
 
-	sprintf(slab_name, "f2fs_page_array_entry-%u:%u", MAJOR(dev), MINOR(dev));
+	snprintf(slab_name, sizeof(slab_name), "f2fs_page_array_entry-%u:%u", MAJOR(dev), MINOR(dev));
 
 	sbi->page_array_slab_size = sizeof(struct page *) <<
 					F2FS_OPTION(sbi).compress_log_size;

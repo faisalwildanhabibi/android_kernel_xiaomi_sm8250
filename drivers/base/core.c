@@ -1694,7 +1694,7 @@ static ssize_t uevent_show(struct device *dev, struct device_attribute *attr,
 
 	/* copy keys to file */
 	for (i = 0; i < env->envp_idx; i++)
-		count += sprintf(&buf[count], "%s\n", env->envp[i]);
+		count += scnprintf(&buf[count], PAGE_SIZE - count, "%s\n", env->envp[i]);
 out:
 	kfree(env);
 	return count;

@@ -483,6 +483,8 @@ build_target() {
         -e DMABUF_SYSFS_STATS \
         -e SUSPEND_SKIP_SYNC \
         -e MM_EVENT_STAT \
+        -e SLAB_FREELIST_RANDOM \
+        -e SLAB_FREELIST_HARDENED \
         -d FAIR_GROUP_SCHED \
         -d SLUB_DEBUG_ON \
         -d PROVE_LOCKING \
