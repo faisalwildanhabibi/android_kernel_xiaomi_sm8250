@@ -332,3 +332,42 @@ int seq_buf_to_user(struct seq_buf *s, char __user *ubuf, int cnt)
 	s->readpos += cnt;
 	return cnt;
 }
+
+/**
+ * seq_buf_to_buffer - copy the sequence buffer to a memory buffer
+ * @s: seq_buf descriptor
+ * @buf: The memory location to copy to
+ * @cnt: The amount to copy
+ *
+ * Copies the sequence buffer into the memory pointed to by @buf.
+ * It starts from the last read position (@s->readpos) and writes up to
+ * @cnt characters or till it reaches the end of the content in the
+ * buffer (@s->len), which ever comes first.
+ *
+ * On success, it returns a positive number of the number of bytes
+ * it copied.
+ *
+ * On failure it returns -EBUSY if all of the content in the
+ * sequence has been already read, which includes nothing in the
+ * sequence (@s->len == @s->readpos).
+ */
+int seq_buf_to_buffer(struct seq_buf *s, void *buf, int cnt)
+{
+	int len;
+
+	if (!cnt)
+		return 0;
+
+	len = seq_buf_used(s);
+
+	if (len <= s->readpos)
+		return -EBUSY;
+
+	len -= s->readpos;
+	if (cnt > len)
+		cnt = len;
+	memcpy(buf, s->buffer + s->readpos, cnt);
+
+	s->readpos += cnt;
+	return cnt;
+}
