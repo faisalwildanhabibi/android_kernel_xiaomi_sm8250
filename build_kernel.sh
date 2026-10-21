@@ -468,6 +468,9 @@ build_target() {
         --set-str DEFAULT_TCP_CONG "bbr" \
         -e TCP_FASTOPEN \
         -e TCP_FASTOPEN_COOKIE_CHECK \
+        -e NET_SCH_FQ \
+        -e NET_SCH_FQ_CODEL \
+        --set-str DEFAULT_NET_SCH "fq" \
         -e BPF_JIT \
         -e BPF_JIT_ALWAYS_ON \
         -e ZRAM_WRITEBACK \
