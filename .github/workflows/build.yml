@@ -84,6 +84,7 @@ jobs:
 
     - name: "Run Build Script"
       run: |
+        sed -i 's/\r$//' build_kernel.sh
         chmod +x build_kernel.sh
         
         DEV="${{ github.event.inputs.device }}"
