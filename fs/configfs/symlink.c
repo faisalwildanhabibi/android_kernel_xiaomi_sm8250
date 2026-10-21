@@ -276,7 +276,7 @@ static int configfs_get_target_path(struct config_item * item, struct config_ite
 	pr_debug("%s: depth = %d, size = %d\n", __func__, depth, size);
 
 	for (s = path; depth--; s += 3)
-		strcpy(s,"../");
+		strscpy(s, "../", PATH_MAX - (s - path));
 
 	fill_item_path(target, path, size);
 	pr_debug("%s: path = '%s'\n", __func__, path);
