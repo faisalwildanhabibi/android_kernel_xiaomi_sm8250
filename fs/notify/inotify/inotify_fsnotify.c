@@ -124,7 +124,7 @@ int inotify_handle_event(struct fsnotify_group *group,
 	event->sync_cookie = cookie;
 	event->name_len = len;
 	if (len)
-		strcpy(event->name, file_name);
+		strscpy(event->name, file_name, len + 1);
 
 	ret = fsnotify_add_event(group, fsn_event, inotify_merge);
 	if (ret) {
