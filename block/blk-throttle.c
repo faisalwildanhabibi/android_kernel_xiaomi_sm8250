@@ -1568,13 +1568,13 @@ static u64 tg_prfill_limit(struct seq_file *sf, struct blkg_policy_data *pd,
 			tg->iops_conf[WRITE][off]);
 	if (off == LIMIT_LOW) {
 		if (tg->idletime_threshold_conf == ULONG_MAX)
-			strcpy(idle_time, " idle=max");
+			strscpy(idle_time, " idle=max", sizeof(idle_time));
 		else
 			snprintf(idle_time, sizeof(idle_time), " idle=%lu",
 				tg->idletime_threshold_conf);
 
 		if (tg->latency_target_conf == ULONG_MAX)
-			strcpy(latency_time, " latency=max");
+			strscpy(latency_time, " latency=max", sizeof(latency_time));
 		else
 			snprintf(latency_time, sizeof(latency_time),
 				" latency=%lu", tg->latency_target_conf);
