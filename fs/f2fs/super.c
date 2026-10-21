@@ -1141,7 +1141,7 @@ static int parse_options(struct super_block *sb, char *options, bool is_remount)
 				return -EINVAL;
 			}
 
-			strcpy(ext[ext_cnt], name);
+			strscpy(ext[ext_cnt], name, sizeof(ext[ext_cnt]));
 			F2FS_OPTION(sbi).compress_ext_cnt++;
 			kfree(name);
 			break;
@@ -1165,7 +1165,7 @@ static int parse_options(struct super_block *sb, char *options, bool is_remount)
 				return -EINVAL;
 			}
 
-			strcpy(noext[noext_cnt], name);
+			strscpy(noext[noext_cnt], name, sizeof(noext[noext_cnt]));
 			F2FS_OPTION(sbi).nocompress_ext_cnt++;
 			kfree(name);
 			break;
