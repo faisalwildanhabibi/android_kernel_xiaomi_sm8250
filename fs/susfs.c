@@ -122,8 +122,8 @@ void susfs_add_sus_path_loop(void __user **user_info) {
 		info.err = -ENOMEM;
 		goto out_copy_to_user;
 	}
-	strscpy(new_list->info.target_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME - 1);
-	strscpy(new_list->target_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME - 1);
+	strscpy(new_list->info.target_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME);
+	strscpy(new_list->target_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME);
 	INIT_LIST_HEAD(&new_list->list);
 	mutex_lock(&susfs_mutex_lock_sus_path);
 	list_add_tail_rcu(&new_list->list, &LH_SUS_PATH_LOOP);
@@ -975,8 +975,8 @@ void susfs_add_open_redirect(void __user **user_info) {
 	new_entry_redirected->reversed_lookup_only = true;
 	new_entry_redirected->spoofed_mnt_id = new_entry_target->spoofed_mnt_id;
 	memcpy(&new_entry_redirected->spoofed_kstatfs, &new_entry_target->spoofed_kstatfs, sizeof(struct kstatfs));
-	strscpy(new_entry_redirected->info.target_pathname, info.redirected_pathname, SUSFS_MAX_LEN_PATHNAME - 1);
-	strscpy(new_entry_redirected->info.redirected_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME - 1);
+	strscpy(new_entry_redirected->info.target_pathname, info.redirected_pathname, SUSFS_MAX_LEN_PATHNAME);
+	strscpy(new_entry_redirected->info.redirected_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME);
 
 	// check for existing entries, delete it first if so
 	mutex_lock(&susfs_mutex_lock_open_redirect);
@@ -1133,7 +1133,7 @@ int susfs_open_redirect_spoof_do_proc_readlink(struct inode *inode, char *tmp_bu
 				srcu_read_unlock(&susfs_srcu_open_redirect, srcu_idx);
 				return -ENAMETOOLONG;
 			}
-			strscpy(tmp_buf, entry->info.redirected_pathname, SUSFS_MAX_LEN_PATHNAME - 1);
+			strscpy(tmp_buf, entry->info.redirected_pathname, SUSFS_MAX_LEN_PATHNAME);
 			srcu_read_unlock(&susfs_srcu_open_redirect, srcu_idx);
 			return 0;
 		}

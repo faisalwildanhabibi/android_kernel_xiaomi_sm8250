@@ -273,12 +273,6 @@ static int filldir(struct dir_context *ctx, const char *name, int namlen,
 	buf->error = -EINVAL;	/* only used if we fail.. */
 	if (reclen > buf->count)
 		return -EINVAL;
-#ifdef CONFIG_KSU_SUSFS
-	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
-		if (susfs_is_sus_su_path(name))
-			return 0;
-	}
-#endif
 	d_ino = ino;
 	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
 		buf->error = -EOVERFLOW;

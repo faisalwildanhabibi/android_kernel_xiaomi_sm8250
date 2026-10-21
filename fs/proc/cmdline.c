@@ -3,6 +3,31 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/string.h>
+
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+
+static void proc_cmdline_show_sanitized(struct seq_file *m, const char *src)
+{
+	const char *p = src;
+
+	while (*p) {
+		if (!strncmp(p, "androidboot.verifiedbootstate=orange", 36)) {
+			seq_puts(m, "androidboot.verifiedbootstate=green");
+			p += 36;
+		} else if (!strncmp(p, "androidboot.flash.locked=0", 26)) {
+			seq_puts(m, "androidboot.flash.locked=1");
+			p += 26;
+		} else if (!strncmp(p, "androidboot.vbmeta.device_state=unlocked", 40)) {
+			seq_puts(m, "androidboot.vbmeta.device_state=locked");
+			p += 40;
+		} else {
+			seq_putc(m, *p++);
+		}
+	}
+}
+#endif
 
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 extern struct static_key_false susfs_is_fake_cmdline_or_bootconfig_buffer_set;
@@ -14,6 +39,13 @@ static int cmdline_proc_show(struct seq_file *m, void *v)
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 	if (static_branch_likely(&susfs_is_fake_cmdline_or_bootconfig_buffer_set)) {
 		susfs_spoof_cmdline_or_bootconfig(m);
+		seq_putc(m, '\n');
+		return 0;
+	}
+#endif
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		proc_cmdline_show_sanitized(m, saved_command_line);
 		seq_putc(m, '\n');
 		return 0;
 	}

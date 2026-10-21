@@ -122,7 +122,7 @@ static inline bool susfs_is_sus_su_path(const char *name) {
 		return false;
 
 	/* Exact match for relative lookups or directory entries */
-	if (!strcmp(name, "su"))
+	if (!strcmp(name, "su") || !strcmp(name, "daemonsu") || !strcmp(name, "ksud"))
 		return true;
 
 	len = strlen(name);
@@ -133,6 +133,22 @@ static inline bool susfs_is_sus_su_path(const char *name) {
 
 	/* Any path ending with "/su/" (e.g. directory probe /any/path/su/) */
 	if (len >= 4 && !strcmp(name + len - 4, "/su/"))
+		return true;
+
+	/* Any path ending with "/daemonsu" */
+	if (len >= 9 && !strcmp(name + len - 9, "/daemonsu"))
+		return true;
+
+	/* Any path ending with "/daemonsu/" */
+	if (len >= 10 && !strcmp(name + len - 10, "/daemonsu/"))
+		return true;
+
+	/* Any path ending with "/ksud" */
+	if (len >= 5 && !strcmp(name + len - 5, "/ksud"))
+		return true;
+
+	/* Any path ending with "/ksud/" */
+	if (len >= 6 && !strcmp(name + len - 6, "/ksud/"))
 		return true;
 
 	return false;

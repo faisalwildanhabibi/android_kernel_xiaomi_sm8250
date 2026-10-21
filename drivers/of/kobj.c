@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/of.h>
 #include <linux/slab.h>
+#include <linux/string.h>
+
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+#endif
 
 #include "of_private.h"
 
@@ -33,6 +38,24 @@ static ssize_t of_node_property_read(struct file *filp, struct kobject *kobj,
 				loff_t offset, size_t count)
 {
 	struct property *pp = container_of(bin_attr, struct property, attr);
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		if (pp->name) {
+			if (!strcmp(pp->name, "verifiedbootstate")) {
+				static const char fake_vbs[] = "green";
+				return memory_read_from_buffer(buf, count, &offset, fake_vbs, sizeof(fake_vbs));
+			}
+			if (!strcmp(pp->name, "device_state")) {
+				static const char fake_ds[] = "locked";
+				return memory_read_from_buffer(buf, count, &offset, fake_ds, sizeof(fake_ds));
+			}
+			if (!strcmp(pp->name, "flash.locked")) {
+				static const char fake_fl[] = "1";
+				return memory_read_from_buffer(buf, count, &offset, fake_fl, sizeof(fake_fl));
+			}
+		}
+	}
+#endif
 	return memory_read_from_buffer(buf, count, &offset, pp->value, pp->length);
 }
 
