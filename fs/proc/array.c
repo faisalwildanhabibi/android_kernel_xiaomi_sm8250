@@ -379,7 +379,15 @@ static inline void task_seccomp(struct seq_file *m, struct task_struct *p)
 {
 	seq_put_decimal_ull(m, "NoNewPrivs:\t", task_no_new_privs(p));
 #ifdef CONFIG_SECCOMP
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode ? p->seccomp.mode : SECCOMP_MODE_FILTER);
+	} else {
+		seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode);
+	}
+#else
 	seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode);
+#endif
 #endif
 	seq_printf(m, "\nSpeculation_Store_Bypass:\t");
 	switch (arch_prctl_spec_ctrl_get(p, PR_SPEC_STORE_BYPASS)) {

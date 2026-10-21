@@ -28,6 +28,10 @@
 #include <linux/syscalls.h>
 #include <linux/sysctl.h>
 
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+#endif
+
 /* Not exposed in headers: strictly internal use only. */
 #define SECCOMP_MODE_DEAD	(SECCOMP_MODE_FILTER + 1)
 
@@ -605,6 +609,11 @@ static inline void seccomp_log(unsigned long syscall, long signr, u32 action,
 	if (!log)
 		return;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su()))
+		return;
+#endif
+
 	audit_seccomp(syscall, signr, action);
 }
 
@@ -814,6 +823,10 @@ int __secure_computing(const struct seccomp_data *sd)
 
 long prctl_get_seccomp(void)
 {
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su()))
+		return current->seccomp.mode ? current->seccomp.mode : SECCOMP_MODE_FILTER;
+#endif
 	return current->seccomp.mode;
 }
 
