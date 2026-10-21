@@ -266,10 +266,10 @@ int sysv_make_empty(struct inode *inode, struct inode *dir)
 
 	de = (struct sysv_dir_entry *) base;
 	de->inode = cpu_to_fs16(SYSV_SB(inode->i_sb), inode->i_ino);
-	strcpy(de->name,".");
+	strscpy(de->name, ".", sizeof(de->name));
 	de++;
 	de->inode = cpu_to_fs16(SYSV_SB(inode->i_sb), dir->i_ino);
-	strcpy(de->name,"..");
+	strscpy(de->name, "..", sizeof(de->name));
 
 	kunmap(page);
 	err = dir_commit_chunk(page, 0, 2 * SYSV_DIRSIZE);
