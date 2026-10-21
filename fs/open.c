@@ -1149,8 +1149,10 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 	if (tmp && !IS_ERR(tmp) && tmp->name) {
 		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
 			if (susfs_is_sus_su_path(tmp->name)) {
-				putname(tmp);
-				return -ENOENT;
+				if (!(flags & O_CREAT)) {
+					putname(tmp);
+					return -ENOENT;
+				}
 			}
 		}
 	}
