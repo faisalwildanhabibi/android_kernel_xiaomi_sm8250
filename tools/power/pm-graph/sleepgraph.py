@@ -467,7 +467,7 @@ class SystemValues:
 		self.kprobes[name] = {'name': name,'func': name,'args': dict(),'format': name}
 	def defaultKprobe(self, name, kdata):
 		k = kdata
-		for field in ['name', 'format', 'func']:
+		for field in ('name', 'format', 'func'):
 			if field not in k:
 				k[field] = name
 		if self.archargs in k:
@@ -753,10 +753,10 @@ class SystemValues:
 			fp.write('error%s: %s\n' % (n, testdata['error']))
 		else:
 			fp.write('result%s: pass\n' % n)
-		for v in ['suspend', 'resume', 'boot', 'lastinit']:
+		for v in ('suspend', 'resume', 'boot', 'lastinit'):
 			if v in testdata:
 				fp.write('%s%s: %.3f\n' % (v, n, testdata[v]))
-		for v in ['fwsuspend', 'fwresume']:
+		for v in ('fwsuspend', 'fwresume'):
 			if v in testdata:
 				fp.write('%s%s: %.3f\n' % (v, n, testdata[v] / 1000000.0))
 		if 'bugurl' in testdata:
@@ -1159,7 +1159,7 @@ class Data:
 				if('src' in d):
 					for e in d['src']:
 						e.time = self.trimTimeVal(e.time, t0, dT, left)
-		for dir in ['suspend', 'resume']:
+		for dir in ('suspend', 'resume'):
 			list = []
 			for e in self.errorinfo[dir]:
 				type, tm, idx1, idx2 = e
@@ -1959,7 +1959,7 @@ class FTraceCallGraph:
 		return found
 	def newActionFromFunction(self, data):
 		name = self.name
-		if name in ['dpm_run_callback', 'dpm_prepare', 'dpm_complete']:
+		if name in ('dpm_run_callback', 'dpm_prepare', 'dpm_complete'):
 			return
 		fs = self.start
 		fe = self.end
@@ -2310,7 +2310,7 @@ class TestProps:
 			fp = sysvals.openlog(sv.ftracefile, 'r')
 			for line in fp:
 				m = re.match('.* machine_suspend\[(?P<mode>.*)\]', line)
-				if m and m.group('mode') in ['1', '2', '3', '4']:
+				if m and m.group('mode') in ('1', '2', '3', '4'):
 					sv.suspendmode = modes[int(m.group('mode'))]
 					data.stamp['mode'] = sv.suspendmode
 					break
@@ -2825,7 +2825,7 @@ def parseTraceLog(live=False):
 						data.dmesg[phase]['end'] = t.time
 						data.tSuspended = t.time
 					else:
-						if(sysvals.suspendmode in ['mem', 'disk'] and not tp.S0i3):
+						if(sysvals.suspendmode in ('mem', 'disk') and not tp.S0i3):
 							data.dmesg['suspend_machine']['end'] = t.time
 							data.tSuspended = t.time
 						phase = 'resume_machine'
@@ -3300,7 +3300,7 @@ def parseKernelLog(data):
 			data.dmesg[phase]['start'] = ktime
 		# resume_machine start
 		elif(re.match(dm['resume_machine'], msg)):
-			if(sysvals.suspendmode in ['freeze', 'standby']):
+			if(sysvals.suspendmode in ('freeze', 'standby')):
 				data.tSuspended = prevktime
 				data.dmesg['suspend_machine']['end'] = prevktime
 			else:
@@ -4697,16 +4697,16 @@ def deviceInfo(output=''):
 		power = dict()
 		power[tgtval] = readFile('%s/power/%s' % (dirname, tgtval))
 		# only list devices which support runtime suspend
-		if power[tgtval] not in ['active', 'suspended', 'suspending']:
+		if power[tgtval] not in ('active', 'suspended', 'suspending'):
 			continue
-		for i in ['product', 'driver', 'subsystem']:
+		for i in ('product', 'driver', 'subsystem'):
 			file = '%s/%s' % (dirname, i)
 			if os.path.exists(file):
 				name = readFile(file)
 				break
-		for i in ['async', 'control', 'runtime_status', 'runtime_usage',
+		for i in ('async', 'control', 'runtime_status', 'runtime_usage',
 			'runtime_active_kids', 'runtime_active_time',
-			'runtime_suspended_time']:
+			'runtime_suspended_time'):
 			if i in filenames:
 				power[i] = readFile('%s/power/%s' % (dirname, i))
 		if output:
@@ -4915,7 +4915,7 @@ def dmidecode(mempath, fatal=False):
 	# by default use legacy scan, but try to use EFI first
 	memaddr = 0xf0000
 	memsize = 0x10000
-	for ep in ['/sys/firmware/efi/systab', '/proc/efi/systab']:
+	for ep in ('/sys/firmware/efi/systab', '/proc/efi/systab'):
 		if not os.path.exists(ep) or not os.access(ep, os.R_OK):
 			continue
 		fp = open(ep, 'r')
@@ -5000,14 +5000,14 @@ def getBattery():
 		type = sysvals.getVal(os.path.join(p, d, 'type')).strip().lower()
 		if type != 'battery':
 			continue
-		for v in ['status', 'energy_now', 'capacity_now']:
+		for v in ('status', 'energy_now', 'capacity_now'):
 			bat[v] = sysvals.getVal(os.path.join(p, d, v)).strip().lower()
 		break
 	ac = True
 	if 'status' in bat and 'discharging' in bat['status']:
 		ac = False
 	charge = 0
-	for v in ['energy_now', 'capacity_now']:
+	for v in ('energy_now', 'capacity_now'):
 		if v in bat and bat[v]:
 			charge = int(bat[v])
 	return (ac, charge)
