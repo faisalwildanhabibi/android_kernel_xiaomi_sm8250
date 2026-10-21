@@ -107,7 +107,7 @@ static char *__dentry_name(struct dentry *dentry, char *name)
 	}
 
 	if (p > name + len)
-		strcpy(name + len, p);
+		strscpy(name + len, p, PATH_MAX - len);
 
 	return name;
 }
