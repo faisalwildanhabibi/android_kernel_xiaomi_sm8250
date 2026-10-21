@@ -581,17 +581,19 @@ static int init_xattrs(struct inode *inode, const struct xattr *xattr_array,
 {
 	const struct xattr *xattr;
 	char *name;
+	size_t name_len;
 	int err = 0;
 
 	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
-		name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
-			       strlen(xattr->name) + 1, GFP_NOFS);
+		name_len = XATTR_SECURITY_PREFIX_LEN + strlen(xattr->name) + 1;
+		name = kmalloc(name_len, GFP_NOFS);
 		if (!name) {
 			err = -ENOMEM;
 			break;
 		}
-		strcpy(name, XATTR_SECURITY_PREFIX);
-		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
+		strscpy(name, XATTR_SECURITY_PREFIX, name_len);
+		strscpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name,
+			name_len - XATTR_SECURITY_PREFIX_LEN);
 		/*
 		 * creating a new inode without holding the inode rwsem,
 		 * no need to check whether inode is locked.
