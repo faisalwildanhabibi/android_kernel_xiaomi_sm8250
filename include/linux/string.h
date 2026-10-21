@@ -20,7 +20,6 @@ extern void *memdup_user_nul(const void __user *, size_t);
 #include <asm/string.h>
 
 #ifndef __HAVE_ARCH_STRCPY
-extern char * strcpy(char *,const char *);
 #endif
 #ifndef __HAVE_ARCH_STRNCPY
 extern char * strncpy(char *,const char *, __kernel_size_t);
@@ -265,7 +264,6 @@ extern void *__underlying_memcpy(void *p, const void *q, __kernel_size_t size) _
 extern void *__underlying_memmove(void *p, const void *q, __kernel_size_t size) __RENAME(memmove);
 extern void *__underlying_memset(void *p, int c, __kernel_size_t size) __RENAME(memset);
 extern char *__underlying_strcat(char *p, const char *q) __RENAME(strcat);
-extern char *__underlying_strcpy(char *p, const char *q) __RENAME(strcpy);
 extern __kernel_size_t __underlying_strlen(const char *p) __RENAME(strlen);
 extern char *__underlying_strncat(char *p, const char *q, __kernel_size_t count) __RENAME(strncat);
 extern char *__underlying_strncpy(char *p, const char *q, __kernel_size_t size) __RENAME(strncpy);
@@ -276,7 +274,6 @@ extern char *__underlying_strncpy(char *p, const char *q, __kernel_size_t size) 
 #define __underlying_memmove	__builtin_memmove
 #define __underlying_memset	__builtin_memset
 #define __underlying_strcat	__builtin_strcat
-#define __underlying_strcpy	__builtin_strcpy
 #define __underlying_strlen	__builtin_strlen
 #define __underlying_strncat	__builtin_strncat
 #define __underlying_strncpy	__builtin_strncpy
@@ -482,7 +479,6 @@ __FORTIFY_INLINE char *strcpy(char *p, const char *q)
 #undef __underlying_memmove
 #undef __underlying_memset
 #undef __underlying_strcat
-#undef __underlying_strcpy
 #undef __underlying_strlen
 #undef __underlying_strncat
 #undef __underlying_strncpy
