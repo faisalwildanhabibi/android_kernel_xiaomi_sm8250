@@ -138,9 +138,9 @@ class SystemValues(aslib.SystemValues):
 		cmdline = '%s -cronjob' % os.path.abspath(sys.argv[0])
 		args = iter(sys.argv[1:])
 		for arg in args:
-			if arg in ['-h', '-v', '-cronjob', '-reboot', '-verbose']:
+			if arg in ('-h', '-v', '-cronjob', '-reboot', '-verbose'):
 				continue
-			elif arg in ['-o', '-dmesg', '-ftrace', '-func']:
+			elif arg in ('-o', '-dmesg', '-ftrace', '-func'):
 				args.next()
 				continue
 			elif arg == '-result':
@@ -932,7 +932,7 @@ if __name__ == '__main__':
 				val = args.next()
 			except:
 				doError('No boot loader name supplied', True)
-			if val.lower() not in ['grub']:
+			if val.lower() != 'grub':
 				doError('Unknown boot loader: %s' % val, True)
 			sysvals.bootloader = val.lower()
 		elif(arg == '-timeprec'):
