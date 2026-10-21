@@ -2321,6 +2321,9 @@ static unsigned long __zs_compact(struct zs_pool *pool,
 	struct zspage *dst_zspage = NULL;
 	unsigned long pages_freed = 0;
 
+	if (!zs_can_compact(class))
+		return 0;
+
 	spin_lock(&class->lock);
 	while ((src_zspage = isolate_zspage(class, true))) {
 
@@ -2375,6 +2378,8 @@ unsigned long zs_compact(struct zs_pool *pool)
 		if (!class)
 			continue;
 		if (class->index != i)
+			continue;
+		if (!zs_can_compact(class))
 			continue;
 		pages_freed += __zs_compact(pool, class);
 	}
