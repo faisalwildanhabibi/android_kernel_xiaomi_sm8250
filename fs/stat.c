@@ -172,6 +172,33 @@ EXPORT_SYMBOL(vfs_getattr_nosec);
  *
  * 0 will be returned on success, and a -ve error code if unsuccessful.
  */
+#ifdef CONFIG_KSU_SUSFS
+static void susfs_spoof_statx_for_non_su(const struct path *path, struct kstat *stat)
+{
+	struct dentry *parent;
+	struct inode *parent_inode;
+
+	if (!path || !path->dentry || !stat)
+		return;
+
+	if (stat->uid.val == 0) {
+		parent = path->dentry->d_parent;
+		if (!parent)
+			return;
+
+		parent_inode = d_backing_inode(parent);
+		if (!parent_inode)
+			return;
+
+		if (parent_inode->i_uid.val != 0) {
+			stat->uid = parent_inode->i_uid;
+			stat->gid = parent_inode->i_gid;
+			stat->mode &= ~(S_ISUID | S_ISGID | S_IWOTH);
+		}
+	}
+}
+#endif
+
 int vfs_getattr(const struct path *path, struct kstat *stat,
 		u32 request_mask, unsigned int query_flags)
 {
@@ -180,7 +207,14 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 	retval = security_inode_getattr(path);
 	if (retval)
 		return retval;
-	return vfs_getattr_nosec(path, stat, request_mask, query_flags);
+	retval = vfs_getattr_nosec(path, stat, request_mask, query_flags);
+#ifdef CONFIG_KSU_SUSFS
+	if (!retval && unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+				!susfs_is_current_app_allowed_su())) {
+		susfs_spoof_statx_for_non_su(path, stat);
+	}
+#endif
+	return retval;
 }
 EXPORT_SYMBOL(vfs_getattr);
 

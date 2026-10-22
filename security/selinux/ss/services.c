@@ -48,6 +48,10 @@
 #include <linux/in.h>
 #include <linux/sched.h>
 #include <linux/audit.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/cred.h>
+#include <linux/susfs_def.h>
+#endif
 #include <linux/mutex.h>
 #include <linux/flex_array.h>
 #include <linux/vmalloc.h>
@@ -1574,6 +1578,13 @@ int security_context_to_sid(struct selinux_state *state,
 			    const char *scontext, u32 scontext_len, u32 *sid,
 			    gfp_t gfp)
 {
+#ifdef CONFIG_KSU_SUSFS
+	if (scontext && scontext_len > 0 && current_uid().val >= 10000 && !susfs_is_current_app_allowed_su()) {
+		if (strstr(scontext, ":ksu") || strstr(scontext, ":magisk") || strstr(scontext, ":zygisk")) {
+			return -EINVAL;
+		}
+	}
+#endif
 	return security_context_to_sid_core(state, scontext, scontext_len,
 					    sid, SECSID_NULL, gfp, 0);
 }

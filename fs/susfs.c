@@ -1742,6 +1742,11 @@ void susfs_sanitize_sepolicy_buffer(void *data, size_t len)
 		{ "magisk_file", "vendor_file", 11 },
 		{ "ksu_file",    "sys_file",    8 },
 		{ "su_key",      "no_key",      6 },
+		{ "ksud_file",   "sys_file_",   9 },
+		{ "ksud_exec",   "sys_exec_",   9 },
+		{ "zygisk_lib",  "system_lib",  10 },
+		{ "kernelsu",    "androidos",   8 },
+		{ "sukisu",      "system",      6 },
 	};
 	int i;
 	char *p, *end;
