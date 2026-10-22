@@ -258,7 +258,8 @@ static int proc_fd_link(struct dentry *dentry, struct path *path)
 		fd_file = files_lookup_fd_rcu(files, fd);
 		if (fd_file) {
 #ifdef CONFIG_KSU_SUSFS
-			if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) && susfs_is_sus_fd(fd_file)) {
+			if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+				     !susfs_is_current_app_allowed_su()) && susfs_is_sus_fd(fd_file)) {
 				ret = -ENOENT;
 			} else {
 				*path = fd_file->f_path;
@@ -358,7 +359,8 @@ static int proc_readfd_common(struct file *file, struct dir_context *ctx,
 		if (!f)
 			continue;
 #ifdef CONFIG_KSU_SUSFS
-		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) && susfs_is_sus_fd(f))
+		if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+			     !susfs_is_current_app_allowed_su()) && susfs_is_sus_fd(f))
 			continue;
 #endif
 		data.mode = f->f_mode;

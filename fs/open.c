@@ -433,11 +433,15 @@ retry:
 		}
 	}
 
-	if (likely(susfs_is_current_proc_no_su()))
+	if (unlikely(susfs_is_current_app_allowed_su())) {
+		susfs_clear_current_proc_no_su();
+		susfs_clear_current_proc_umounted();
+	} else if (likely(susfs_is_current_proc_no_su())) {
 		goto orig_flow;
+	}
 
 	if (static_branch_likely(&ksu_su_compat_enabled)) {
-		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val)))
+		if (unlikely(susfs_is_current_app_allowed_su()))
 			ksu_handle_faccessat(&dfd, &fname, &mode, NULL);
 	}
 

@@ -191,6 +191,9 @@ bool susfs_is_inode_sus_path(struct inode *inode)
 #endif
 {
 	struct fuse_inode *fi = NULL;
+	if (susfs_is_current_app_allowed_su()) {
+		return false;
+	}
 	if (!susfs_is_current_proc_umounted_app()) {
 		return false;
 	}
@@ -1064,15 +1067,15 @@ struct filename *susfs_open_redirect_spoof_do_sys_openat(struct inode *inode) {
 						break;
 					goto out_srcu_read_unlock;
 				case UID_NON_SU_PROC:
-					if (!susfs_is_current_ksu_domain())
+					if (!susfs_is_current_ksu_domain() && !susfs_is_current_app_allowed_su())
 						break;
 					goto out_srcu_read_unlock;
 				case UID_UMOUNTED_APP_PROC:
-					if (susfs_is_current_proc_umounted_app())
+					if (susfs_is_current_proc_umounted_app() && !susfs_is_current_app_allowed_su())
 						break;
 					goto out_srcu_read_unlock;
 				case UID_UMOUNTED_PROC:
-					if (susfs_is_current_proc_umounted())
+					if (susfs_is_current_proc_umounted() && !susfs_is_current_app_allowed_su())
 						break;
 					goto out_srcu_read_unlock;
 				default:
@@ -1925,7 +1928,7 @@ bool susfs_is_sus_fd(struct file *file)
 {
 	struct inode *inode;
 
-	if (!file)
+	if (!file || susfs_is_current_app_allowed_su())
 		return false;
 
 	inode = file_inode(file);
