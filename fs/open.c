@@ -422,7 +422,8 @@ retry:
 	fname = getname_flags(filename, lookup_flags, NULL);
 
 	if (fname && !IS_ERR(fname) && fname->name) {
-		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+			     !susfs_is_current_app_allowed_su())) {
 			if (susfs_is_sus_su_path(fname->name)) {
 				putname(fname);
 				revert_creds(old_cred);
@@ -1147,7 +1148,8 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 
 #ifdef CONFIG_KSU_SUSFS
 	if (tmp && !IS_ERR(tmp) && tmp->name) {
-		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+			     !susfs_is_current_app_allowed_su())) {
 			if (susfs_is_sus_su_path(tmp->name)) {
 				if (!(flags & O_CREAT)) {
 					putname(tmp);

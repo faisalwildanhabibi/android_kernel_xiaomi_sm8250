@@ -198,6 +198,17 @@ static inline bool susfs_is_current_app_uid(void) {
 	return ((current_uid().val % 100000) >= 10000);
 }
 
+#ifdef CONFIG_KSU
+extern bool __ksu_is_allow_uid_for_current(uid_t uid);
+static inline bool susfs_is_current_app_allowed_su(void) {
+	return __ksu_is_allow_uid_for_current(current_uid().val);
+}
+#else
+static inline bool susfs_is_current_app_allowed_su(void) {
+	return false;
+}
+#endif
+
 static inline bool susfs_is_current_proc_umounted(void) {
 	return (likely(test_thread_flag(TIF_PROC_UMOUNTED)));
 }
