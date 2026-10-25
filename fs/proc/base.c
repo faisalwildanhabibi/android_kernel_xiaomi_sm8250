@@ -371,13 +371,12 @@ static ssize_t proc_pid_cmdline_read(struct file *file, char __user *buf,
 	if (!tsk)
 		return -ESRCH;
 #ifdef CONFIG_KSU_SUSFS
-	if (current_uid().val >= 10000) {
+	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+		     !susfs_is_current_app_allowed_su())) {
 		char comm[TASK_COMM_LEN];
 		get_task_comm(comm, tsk);
-		if (strnstr(comm, "ksud", 4) ||
-		    strnstr(comm, "magisk", 6) ||
-		    strnstr(comm, "zygisk", 6) ||
-		    strnstr(comm, "lspd", 4)) {
+		susfs_spoof_comm(tsk, comm);
+		if (!strcmp(comm, "Jit thread pool") || uid_eq(task_uid(tsk), GLOBAL_ROOT_UID)) {
 			put_task_struct(tsk);
 			return 0;
 		}
@@ -986,7 +985,8 @@ static ssize_t environ_read(struct file *file, char __user *buf,
 		}
 
 #ifdef CONFIG_KSU_SUSFS
-		if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+		if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+			     !susfs_is_current_app_allowed_su())) {
 			size_t cur_len = (size_t)retval;
 			susfs_filter_environ_buffer(page, &cur_len);
 			retval = (int)cur_len;
@@ -1849,7 +1849,8 @@ static int comm_show(struct seq_file *m, void *v)
 		return -ESRCH;
 
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+		     !susfs_is_current_app_allowed_su())) {
 		char comm_buf[TASK_COMM_LEN];
 		get_task_comm(comm_buf, p);
 		susfs_spoof_comm(p, comm_buf);

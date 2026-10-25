@@ -113,7 +113,8 @@ void proc_task_name(struct seq_file *m, struct task_struct *p, bool escape)
 		__get_task_comm(tcomm, sizeof(tcomm), p);
 
 #ifdef CONFIG_KSU_SUSFS
-	if (current_uid().val >= 10000) {
+	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+		     !susfs_is_current_app_allowed_su())) {
 		susfs_spoof_comm(p, tcomm);
 	}
 #endif
@@ -188,7 +189,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
 	 * 2. If tracer is external (root, frida-server, debugger with different UID),
 	 *    VIRTUALIZE tpid to 0 so external attachment is completely hidden.
 	 */
-	if (tracer && susfs_is_current_proc_umounted_app()) {
+	if (tracer && susfs_is_current_proc_unprivileged_non_su()) {
 		kuid_t p_uid = task_uid(p);
 		kuid_t tracer_uid = task_uid(tracer);
 		if (!uid_eq(p_uid, tracer_uid)) {
@@ -214,7 +215,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
 	{
 		const char *s_state = get_task_state(p);
 #ifdef CONFIG_KSU_SUSFS
-		if (tpid == 0 && tracer && susfs_is_current_proc_umounted_app()) {
+		if (tpid == 0 && tracer && susfs_is_current_proc_unprivileged_non_su()) {
 			if (task_is_traced(p))
 				s_state = "S (sleeping)";
 		}
@@ -380,7 +381,8 @@ static inline void task_seccomp(struct seq_file *m, struct task_struct *p)
 	seq_put_decimal_ull(m, "NoNewPrivs:\t", task_no_new_privs(p));
 #ifdef CONFIG_SECCOMP
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+		     !susfs_is_current_app_allowed_su())) {
 		seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode ? p->seccomp.mode : SECCOMP_MODE_FILTER);
 	} else {
 		seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode);
