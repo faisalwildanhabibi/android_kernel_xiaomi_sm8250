@@ -118,7 +118,7 @@ int vfs_statfs(const struct path *path, struct kstatfs *buf)
 {
 	int error;
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-	if (susfs_is_current_app_uid()) {
+	if (susfs_is_current_proc_unprivileged_non_su()) {
 		struct inode *inode = d_backing_inode(path->dentry);
 		bool is_fuse = false;
 		if (susfs_is_inode_sus_kstat(inode, &is_fuse)) {
@@ -131,7 +131,7 @@ int vfs_statfs(const struct path *path, struct kstatfs *buf)
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (likely(susfs_is_current_proc_umounted())) {
+	if (likely(susfs_is_current_proc_unprivileged_non_su())) {
 		struct vfsmount *no_sus_vfsmnt = NULL;
 		no_sus_vfsmnt = susfs_get_non_sus_vfsmnt_from_vfsmnt(path->mnt);
 		if (path->mnt == no_sus_vfsmnt) {

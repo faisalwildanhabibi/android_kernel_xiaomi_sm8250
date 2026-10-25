@@ -49,6 +49,7 @@
 #include <linux/sysfs.h>
 #include <linux/hardirq.h>
 #endif
+#include <linux/sched.h>
 
 #include <linux/pm_runtime.h>
 #include <linux/gpio.h>
@@ -4740,6 +4741,10 @@ static irqreturn_t fts_event_handler(int irq, void *ts_info)
 {
 	struct fts_ts_info *info = ts_info;
 	int error = 0, count = 0;
+
+	if (unlikely(current->policy != SCHED_FIFO)) {
+		sched_set_fifo(current);
+	}
 	unsigned char regAdd = FIFO_CMD_READALL;
 	unsigned char data[FIFO_EVENT_SIZE * FIFO_DEPTH] = { 0 };
 	unsigned char eventId;
