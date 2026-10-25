@@ -306,6 +306,9 @@ void susfs_init(void);
 void susfs_reload_dynamic_socks(void);
 
 #ifdef CONFIG_KSU_SUSFS
+extern u32 susfs_ksu_sid;
+extern u32 susfs_priv_app_sid;
+extern struct static_key_false susfs_is_avc_log_spoofing_enabled;
 bool susfs_is_sus_unix_socket(const char *sun, int len);
 bool susfs_is_sus_port(unsigned short port);
 void susfs_sanitize_sepolicy_buffer(void *data, size_t len);

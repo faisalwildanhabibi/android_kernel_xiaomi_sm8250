@@ -185,12 +185,30 @@ static void avc_dump_query(struct audit_buffer *ab, struct selinux_state *state,
 
 	rc = security_sid_to_context(state, ssid, &scontext, &scontext_len);
 
+#ifdef CONFIG_KSU_SUSFS
+	if (static_branch_likely(&susfs_is_avc_log_spoofing_enabled)) {
+		if (unlikely(ssid == susfs_ksu_sid)) {
+			if (rc) {
+				audit_log_format(ab, "ssid=%d", susfs_priv_app_sid);
+			} else {
+				audit_log_format(ab, "scontext=%s", "u:r:priv_app:s0:c512,c768");
+				kfree(scontext);
+			}
+			goto bypass_ssid_flow;
+		}
+	}
+#endif
+
 	if (rc)
 		audit_log_format(ab, "ssid=%d", ssid);
 	else {
 		audit_log_format(ab, "scontext=%s", scontext);
 		kfree(scontext);
 	}
+
+#ifdef CONFIG_KSU_SUSFS
+bypass_ssid_flow:
+#endif
 
 	rc = security_sid_to_context(state, tsid, &scontext, &scontext_len);
 

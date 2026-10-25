@@ -2878,14 +2878,6 @@ EXPORT_SYMBOL(udp_seq_start);
 void *udp_seq_next(struct seq_file *seq, void *v, loff_t *pos)
 {
 	struct sock *sk;
-
-#ifdef CONFIG_KSU_SUSFS
-	if (current_uid().val >= 10000 && v != SEQ_START_TOKEN) {
-		struct inet_sock *inet = inet_sk((struct sock *)v);
-		if (inet && susfs_is_sus_port(ntohs(inet->inet_sport)))
-			return 0;
-	}
-#endif
 	if (v == SEQ_START_TOKEN)
 		sk = udp_get_idx(seq, 0);
 	else
@@ -2942,6 +2934,15 @@ static void udp4_format_sock(struct sock *sp, struct seq_file *f,
 
 int udp4_seq_show(struct seq_file *seq, void *v)
 {
+#ifdef CONFIG_KSU_SUSFS
+	if ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+	    !susfs_is_current_app_allowed_su() && v != SEQ_START_TOKEN) {
+		struct inet_sock *inet = inet_sk((struct sock *)v);
+		if (inet && (susfs_is_sus_port(ntohs(inet->inet_sport)) ||
+			     susfs_is_sus_port(ntohs(inet->inet_dport))))
+			return 0;
+	}
+#endif
 	seq_setwidth(seq, 127);
 	if (v == SEQ_START_TOKEN)
 		seq_puts(seq, "   sl  local_address rem_address   st tx_queue "

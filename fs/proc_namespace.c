@@ -472,7 +472,8 @@ static int mounts_release(struct inode *inode, struct file *file)
 static int mounts_open(struct inode *inode, struct file *file)
 {
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (static_branch_likely(&susfs_is_hide_sus_mnts_for_non_su_procs_enabled)) {
+	if (static_branch_likely(&susfs_is_hide_sus_mnts_for_non_su_procs_enabled) ||
+	    ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) && !susfs_is_current_app_allowed_su())) {
 		if (likely(!susfs_is_current_ksu_domain()))
 			return mounts_open_common(inode, file, susfs_show_vfsmnt);
 	}
@@ -483,7 +484,8 @@ static int mounts_open(struct inode *inode, struct file *file)
 static int mountinfo_open(struct inode *inode, struct file *file)
 {
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (static_branch_likely(&susfs_is_hide_sus_mnts_for_non_su_procs_enabled)) {
+	if (static_branch_likely(&susfs_is_hide_sus_mnts_for_non_su_procs_enabled) ||
+	    ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) && !susfs_is_current_app_allowed_su())) {
 		if (likely(!susfs_is_current_ksu_domain()))
 			return mounts_open_common(inode, file, susfs_show_mountinfo);
 	}
@@ -494,7 +496,8 @@ static int mountinfo_open(struct inode *inode, struct file *file)
 static int mountstats_open(struct inode *inode, struct file *file)
 {
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (static_branch_likely(&susfs_is_hide_sus_mnts_for_non_su_procs_enabled)) {
+	if (static_branch_likely(&susfs_is_hide_sus_mnts_for_non_su_procs_enabled) ||
+	    ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) && !susfs_is_current_app_allowed_su())) {
 		if (likely(!susfs_is_current_ksu_domain()))
 			return mounts_open_common(inode, file, susfs_show_vfsstat);
 	}

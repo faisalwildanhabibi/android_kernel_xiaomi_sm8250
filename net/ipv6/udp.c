@@ -57,6 +57,9 @@
 #include <trace/events/skb.h>
 #include <trace/events/udp.h>
 #include "udp_impl.h"
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 
 static bool udp6_lib_exact_dif_match(struct net *net, struct sk_buff *skb)
 {
@@ -1593,6 +1596,15 @@ static const struct inet6_protocol udpv6_protocol = {
 #ifdef CONFIG_PROC_FS
 int udp6_seq_show(struct seq_file *seq, void *v)
 {
+#ifdef CONFIG_KSU_SUSFS
+	if ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
+	    !susfs_is_current_app_allowed_su() && v != SEQ_START_TOKEN) {
+		struct inet_sock *inet = inet_sk(v);
+		if (inet && (susfs_is_sus_port(ntohs(inet->inet_sport)) ||
+			     susfs_is_sus_port(ntohs(inet->inet_dport))))
+			return 0;
+	}
+#endif
 	if (v == SEQ_START_TOKEN) {
 		seq_puts(seq, IPV6_SEQ_DGRAM_HEADER);
 	} else {

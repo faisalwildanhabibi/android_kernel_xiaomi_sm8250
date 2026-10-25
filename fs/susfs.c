@@ -1235,6 +1235,8 @@ bool susfs_is_sus_map_file(struct file *file)
 
 /* susfs avc log spoofing */
 DEFINE_STATIC_KEY_FALSE(susfs_is_avc_log_spoofing_enabled);
+u32 susfs_ksu_sid = 0;
+u32 susfs_priv_app_sid = 0;
 
 void susfs_set_avc_log_spoofing(void __user **user_info) {
 	struct st_susfs_avc_log_spoofing info = {0};
@@ -1703,7 +1705,7 @@ void susfs_init(void) {
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_sus_unix_socket(const char *sun, int len)
 {
-	unsigned long flags;
+	int count = READ_ONCE(susfs_custom_socks_count);
 	int i;
 
 	if (!sun || len <= 0)
@@ -1717,15 +1719,12 @@ bool susfs_is_sus_unix_socket(const char *sun, int len)
 	    strnstr(sun, "usap_pool", len))
 		return true;
 
-	if (susfs_custom_socks_count > 0) {
-		spin_lock_irqsave(&susfs_socks_lock, flags);
-		for (i = 0; i < susfs_custom_socks_count; i++) {
-			if (susfs_custom_socks[i][0] && strnstr(sun, susfs_custom_socks[i], len)) {
-				spin_unlock_irqrestore(&susfs_socks_lock, flags);
+	if (count > 0) {
+		smp_rmb();
+		for (i = 0; i < count; i++) {
+			if (susfs_custom_socks[i][0] && strnstr(sun, susfs_custom_socks[i], len))
 				return true;
-			}
 		}
-		spin_unlock_irqrestore(&susfs_socks_lock, flags);
 	}
 
 	return false;
@@ -1779,20 +1778,17 @@ static DEFINE_SPINLOCK(susfs_ports_lock);
 
 bool susfs_is_sus_port(unsigned short port)
 {
-	unsigned long flags;
+	int count = READ_ONCE(susfs_custom_ports_count);
 	int i;
 
-	if (port == 0)
+	if (unlikely(port == 0 || count == 0))
 		return false;
 
-	spin_lock_irqsave(&susfs_ports_lock, flags);
-	for (i = 0; i < susfs_custom_ports_count; i++) {
-		if (susfs_custom_ports[i] == port) {
-			spin_unlock_irqrestore(&susfs_ports_lock, flags);
+	smp_rmb();
+	for (i = 0; i < count; i++) {
+		if (READ_ONCE(susfs_custom_ports[i]) == port)
 			return true;
-		}
 	}
-	spin_unlock_irqrestore(&susfs_ports_lock, flags);
 	return false;
 }
 
@@ -1821,7 +1817,9 @@ void susfs_add_sus_port(void __user **user_info)
 		}
 	}
 	if (susfs_custom_ports_count < SUSFS_MAX_CUSTOM_PORTS) {
-		susfs_custom_ports[susfs_custom_ports_count++] = info.target_port;
+		susfs_custom_ports[susfs_custom_ports_count] = info.target_port;
+		smp_wmb();
+		WRITE_ONCE(susfs_custom_ports_count, susfs_custom_ports_count + 1);
 		info.err = 0;
 	} else {
 		info.err = -ENOSPC;
@@ -1858,7 +1856,9 @@ void susfs_add_sus_unix_socket(void __user **user_info)
 		}
 	}
 	if (susfs_custom_socks_count < SUSFS_MAX_CUSTOM_SOCKS) {
-		strlcpy(susfs_custom_socks[susfs_custom_socks_count++], info.target_pattern, SUSFS_SOCK_PATTERN_LEN);
+		strlcpy(susfs_custom_socks[susfs_custom_socks_count], info.target_pattern, SUSFS_SOCK_PATTERN_LEN);
+		smp_wmb();
+		WRITE_ONCE(susfs_custom_socks_count, susfs_custom_socks_count + 1);
 		info.err = 0;
 	} else {
 		info.err = -ENOSPC;
