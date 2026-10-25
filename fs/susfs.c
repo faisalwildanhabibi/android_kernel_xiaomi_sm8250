@@ -1235,8 +1235,8 @@ bool susfs_is_sus_map_file(struct file *file)
 
 /* susfs avc log spoofing */
 DEFINE_STATIC_KEY_FALSE(susfs_is_avc_log_spoofing_enabled);
-u32 susfs_ksu_sid = 0;
-u32 susfs_priv_app_sid = 0;
+extern u32 susfs_ksu_sid;
+extern u32 susfs_priv_app_sid;
 
 void susfs_set_avc_log_spoofing(void __user **user_info) {
 	struct st_susfs_avc_log_spoofing info = {0};
