@@ -29,6 +29,8 @@ on:
       - 'arch/arm64/configs/**'
       - 'fs/**'
       - 'include/**'
+      - 'kernel/**'
+      - 'drivers/**'
       - 'net/**'
       - 'security/**'
       - '.github/workflows/build.yml'
