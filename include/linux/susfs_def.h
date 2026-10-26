@@ -261,16 +261,16 @@ static inline bool susfs_is_current_proc_unprivileged_non_su(void) {
 }
 
 #define SUSFS_IS_INODE_SUS_MAP(inode) \
-		inode && inode->i_mapping && \
-		unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_state)) && \
-		susfs_is_current_proc_unprivileged_non_su()
+		((inode) && (inode)->i_mapping && \
+		unlikely(test_bit(AS_FLAGS_SUS_MAP, &(inode)->i_state)) && \
+		susfs_is_current_proc_unprivileged_non_su())
 
 #define SUSFS_IS_INODE_OPEN_REDIRECT_WITHOUT_UID_CHECK(inode) \
-		inode && inode->i_mapping && \
-		unlikely(test_bit(AS_FLAGS_OPEN_REDIRECT, &inode->i_state))
+		((inode) && (inode)->i_mapping && \
+		unlikely(test_bit(AS_FLAGS_OPEN_REDIRECT, &(inode)->i_state)))
 
 #define SUSFS_IS_INODE_OPEN_REDIRECT(inode) \
-		inode && inode->i_mapping && \
-		unlikely(test_bit(AS_FLAGS_OPEN_REDIRECT, &inode->i_state)) && \
-		susfs_is_current_proc_unprivileged_non_su()
+		((inode) && (inode)->i_mapping && \
+		unlikely(test_bit(AS_FLAGS_OPEN_REDIRECT, &(inode)->i_state)) && \
+		susfs_is_current_proc_unprivileged_non_su())
 #endif // #ifndef KSU_SUSFS_DEF_H
