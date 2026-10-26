@@ -260,6 +260,15 @@ static int susfs_show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 	if (r->mnt_id >= DEFAULT_KSU_MNT_ID)
 		return 0;
 
+	if (r->mnt_devname && (strstr(r->mnt_devname, "/modules/") ||
+			       strstr(r->mnt_devname, "/zygisk") ||
+			       strstr(r->mnt_devname, "/data/adb/")))
+		return 0;
+	if (mnt->mnt_root && mnt->mnt_root->d_name.name &&
+	    (strstr(mnt->mnt_root->d_name.name, "zygisk") ||
+	     strstr(mnt->mnt_root->d_name.name, "modules")))
+		return 0;
+
 	if (sb->s_op->show_devname) {
 		err = sb->s_op->show_devname(m, mnt_path.dentry);
 		if (err)
@@ -297,6 +306,15 @@ static int susfs_show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
 	int err;
 
 	if (r->mnt_id >= DEFAULT_KSU_MNT_ID)
+		return 0;
+
+	if (r->mnt_devname && (strstr(r->mnt_devname, "/modules/") ||
+			       strstr(r->mnt_devname, "/zygisk") ||
+			       strstr(r->mnt_devname, "/data/adb/")))
+		return 0;
+	if (mnt->mnt_root && mnt->mnt_root->d_name.name &&
+	    (strstr(mnt->mnt_root->d_name.name, "zygisk") ||
+	     strstr(mnt->mnt_root->d_name.name, "modules")))
 		return 0;
 
 	seq_printf(m, "%i %i %u:%u ", r->mnt_id, susfs_get_non_sus_mnt_id_from_mnt(r->mnt_parent),
@@ -364,6 +382,15 @@ static int susfs_show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
 	int err;
 
 	if (r->mnt_id >= DEFAULT_KSU_MNT_ID)
+		return 0;
+
+	if (r->mnt_devname && (strstr(r->mnt_devname, "/modules/") ||
+			       strstr(r->mnt_devname, "/zygisk") ||
+			       strstr(r->mnt_devname, "/data/adb/")))
+		return 0;
+	if (mnt->mnt_root && mnt->mnt_root->d_name.name &&
+	    (strstr(mnt->mnt_root->d_name.name, "zygisk") ||
+	     strstr(mnt->mnt_root->d_name.name, "modules")))
 		return 0;
 
 	/* device */
