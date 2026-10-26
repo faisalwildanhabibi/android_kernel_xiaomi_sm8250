@@ -890,7 +890,8 @@ static int show_smap(struct seq_file *m, void *v)
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 	if (vma->vm_file) {
-		if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
+		if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)) ||
+		    susfs_is_sus_map_file(vma->vm_file))
 			return 0;
 	}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP

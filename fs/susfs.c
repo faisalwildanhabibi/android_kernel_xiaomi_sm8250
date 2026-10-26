@@ -1223,7 +1223,13 @@ bool susfs_is_sus_map_file(struct file *file)
 		if (name) {
 			if (strnstr(name, "frida", 32) ||
 			    strnstr(name, "neo_zygisk", 32) ||
+			    strnstr(name, "zygisk", 32) ||
+			    strnstr(name, "lspd", 32) ||
 			    strnstr(name, "libriru", 32) ||
+			    strnstr(name, "libmemtrack", 32) ||
+			    strnstr(name, "libadbroot", 32) ||
+			    strnstr(name, "bakasu", 32) ||
+			    strnstr(name, "libsigbypass", 32) ||
 			    strnstr(name, "usap_pool", 32))
 				return true;
 		}
