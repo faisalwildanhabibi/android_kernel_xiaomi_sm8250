@@ -376,7 +376,7 @@ static ssize_t proc_pid_cmdline_read(struct file *file, char __user *buf,
 		char comm[TASK_COMM_LEN];
 		get_task_comm(comm, tsk);
 		susfs_spoof_comm(tsk, comm);
-		if (!strcmp(comm, "Jit thread pool") || uid_eq(task_uid(tsk), GLOBAL_ROOT_UID)) {
+		if (!strcmp(comm, "Jit thread pool")) {
 			put_task_struct(tsk);
 			return 0;
 		}
