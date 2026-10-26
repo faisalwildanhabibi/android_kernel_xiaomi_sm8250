@@ -39,6 +39,7 @@
 #include <linux/percpu-rwsem.h>
 #include <linux/task_work.h>
 #include <linux/shmem_fs.h>
+#include <linux/workqueue.h>
 
 #include <linux/uprobes.h>
 
@@ -46,6 +47,7 @@
 #define MAX_UPROBE_XOL_SLOTS		UINSNS_PER_PAGE
 
 static struct rb_root uprobes_tree = RB_ROOT;
+static void uprobe_work_func(struct work_struct *work);
 /*
  * allows us to skip the uprobe_mmap if there are no uprobe events active
  * at this time.  Probably a fine grained per inode count is better?
@@ -86,6 +88,7 @@ struct uprobe {
 	 *		line, copied to xol_area by xol_get_insn_slot().
 	 */
 	struct arch_uprobe	arch;
+	struct delayed_work	work;
 };
 
 /*
@@ -497,6 +500,7 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
 	uprobe->offset = offset;
 	init_rwsem(&uprobe->register_rwsem);
 	init_rwsem(&uprobe->consumer_rwsem);
+	INIT_DELAYED_WORK(&uprobe->work, uprobe_work_func);
 
 	/* add to uprobes_tree, sorted on inode:offset */
 	cur_uprobe = insert_uprobe(uprobe);
@@ -838,6 +842,27 @@ register_for_each_vma(struct uprobe *uprobe, struct uprobe_consumer *new)
 	return err;
 }
 
+static void uprobe_work_func(struct work_struct *work)
+{
+	struct uprobe *uprobe = container_of(work, struct uprobe, work.work);
+	int err;
+
+	/*
+	 * Re-attempt unregistering if the previous attempt failed due to
+	 * mm locks being held. We don't take register_rwsem to avoid
+	 * lock inversion with mmap_sem, which is acquired in register_for_each_vma.
+	 */
+	err = register_for_each_vma(uprobe, NULL);
+	if (!uprobe->consumers && !err) {
+		delete_uprobe(uprobe);
+	} else if (!uprobe->consumers && err) {
+		schedule_delayed_work(&uprobe->work, HZ / 10);
+	} else {
+		/* A consumer was added, just release our ref */
+		put_uprobe(uprobe);
+	}
+}
+
 static void
 __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
 {
@@ -847,9 +872,12 @@ __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
 		return;
 
 	err = register_for_each_vma(uprobe, NULL);
-	/* TODO : cant unregister? schedule a worker thread */
 	if (!uprobe->consumers && !err)
 		delete_uprobe(uprobe);
+	else if (!uprobe->consumers && err) {
+		get_uprobe(uprobe);
+		schedule_delayed_work(&uprobe->work, HZ / 10);
+	}
 }
 
 /*

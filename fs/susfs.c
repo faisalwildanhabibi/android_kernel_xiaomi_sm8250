@@ -1716,6 +1716,9 @@ bool susfs_is_sus_unix_socket(const char *sun, int len)
 	    strnstr(sun, "/data/adb", len) ||
 	    strnstr(sun, "zygote_next", len) ||
 	    strnstr(sun, "magisk", len) ||
+	    strnstr(sun, "bakasu", len) ||
+	    strnstr(sun, "adbroot", len) ||
+	    strnstr(sun, "tailscale", len) ||
 	    strnstr(sun, "usap_pool", len))
 		return true;
 
