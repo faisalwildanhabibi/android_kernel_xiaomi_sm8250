@@ -82,12 +82,12 @@ mkdir -p "$CCACHE_DIR"
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "==========================================="
-    echo " [*] Initializing KernelSU (ReSukiSU) Setup"
+    echo " [*] Initializing KernelSU (BakaSU) Setup"
     echo "==========================================="
-    echo "[*] Downloading ReSukiSU setup script..."
+    echo "[*] Downloading BakaSU setup script..."
     KSU_SETUP_TMP=$(mktemp)
-    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
-        echo "[+] [ISO 27001 / SLSA] ReSukiSU script retrieved successfully (size: $(stat -c%s "$KSU_SETUP_TMP" 2>/dev/null || stat -f%z "$KSU_SETUP_TMP" 2>/dev/null || echo 0) bytes)."
+    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+        echo "[+] BakaSU script retrieved successfully (size: $(stat -c%s "$KSU_SETUP_TMP" 2>/dev/null || stat -f%z "$KSU_SETUP_TMP" 2>/dev/null || echo 0) bytes)."
         bash "$KSU_SETUP_TMP" main
         rm -f "$KSU_SETUP_TMP"
         if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
@@ -136,7 +136,7 @@ config KSU_SUSFS_TRY_UMOUNT\
             fi
         fi
     else
-        echo "[-] [ISO 27001 / SLSA ABORT] Failed to retrieve valid ReSukiSU setup script!"
+        echo "[-] Failed to retrieve valid BakaSU setup script!"
         rm -f "$KSU_SETUP_TMP"
         exit 1
     fi
@@ -616,7 +616,7 @@ build_target() {
         # Determine ZIP Filename
         local KSU_ZIP_STR="NoKernelSU"
         if [ "$ENABLE_KSU" -eq 1 ]; then
-            KSU_ZIP_STR="ReSukiSU-SuSFS"
+            KSU_ZIP_STR="BakaSU-SuSFS"
         fi
         local DS_ZIP_STR=""
         if [ "$ENABLE_DROIDSPACES" -eq 1 ]; then
