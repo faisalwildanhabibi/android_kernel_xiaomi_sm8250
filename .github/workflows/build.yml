@@ -28,9 +28,9 @@ on:
       - 'scripts/**'
       - 'arch/arm64/configs/**'
       - 'fs/**'
-      - 'include/linux/susfs.h'
-      - 'net/unix/**'
-      - 'security/selinux/**'
+      - 'include/**'
+      - 'net/**'
+      - 'security/**'
       - '.github/workflows/build.yml'
       - '.trigger_ci'
 
