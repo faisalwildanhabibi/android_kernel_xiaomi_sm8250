@@ -107,7 +107,7 @@ static void inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
 	inode = igrab(fsnotify_conn_inode(mark->connector));
 	if (inode) {
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-		if (susfs_is_current_app_uid()) {
+		if (susfs_is_current_proc_unprivileged_non_su()) {
 			bool is_fuse = false;
 			if (susfs_is_inode_sus_kstat(inode, &is_fuse)) {
 				unsigned long ino = inode->i_ino;
@@ -124,7 +124,7 @@ static void inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
 		}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-		if (likely(susfs_is_current_proc_umounted())) {
+		if (likely(susfs_is_current_proc_unprivileged_non_su())) {
 			struct mount *mnt = real_mount(file->f_path.mnt);
 			if (mnt->mnt_id >= DEFAULT_KSU_MNT_ID) {
 				struct path path;

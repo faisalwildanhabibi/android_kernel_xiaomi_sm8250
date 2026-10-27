@@ -1077,11 +1077,11 @@ struct filename *susfs_open_redirect_spoof_do_sys_openat(struct inode *inode) {
 						break;
 					goto out_srcu_read_unlock;
 				case UID_UMOUNTED_APP_PROC:
-					if (susfs_is_current_proc_umounted_app() && !susfs_is_current_app_allowed_su())
+					if (susfs_is_current_proc_unprivileged_non_su())
 						break;
 					goto out_srcu_read_unlock;
 				case UID_UMOUNTED_PROC:
-					if (susfs_is_current_proc_umounted() && !susfs_is_current_app_allowed_su())
+					if (susfs_is_current_proc_unprivileged_non_su())
 						break;
 					goto out_srcu_read_unlock;
 				default:

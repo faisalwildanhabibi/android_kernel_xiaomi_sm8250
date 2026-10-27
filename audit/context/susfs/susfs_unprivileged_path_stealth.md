@@ -5,7 +5,13 @@ This module enhancement unifies and hardens the permission gating and symbol res
 
 ## 2. Technical Mechanism & Call Flow
 1. **Unprivileged Non-SU Gating (`susfs_is_current_proc_unprivileged_non_su`)**:
-   - `fs/susfs.c` (`susfs_is_inode_sus_path`): Dynamically hides any inode registered by userspace ReSuSFS from all unprivileged non-su processes (`uid >= 10000 || TIF_PROC_NO_SU`) without requiring `TIF_PROC_UMOUNTED`.
+   - `include/linux/susfs_def.h`: Enhanced with strict priority bypass for `susfs_is_current_app_allowed_su()`, followed by union of `susfs_is_current_proc_umounted_app()`, `susfs_is_current_app_uid()`, and `susfs_is_current_proc_no_su()`.
+   - `fs/susfs.c` (`susfs_is_inode_sus_path` & open redirect schemes 3/4): Harmonized to `susfs_is_current_proc_unprivileged_non_su()`.
+   - `fs/notify/fdinfo.c`: Inotify and mount fdinfo spoofing harmonized to `susfs_is_current_proc_unprivileged_non_su()`.
+   - `fs/proc/fd.c`: `/proc/[pid]/fd` directory enumeration and symlink resolution harmonized to `susfs_is_current_proc_unprivileged_non_su()`.
+   - `security/selinux/ss/services.c`: SELinux context to SID spoofing harmonized to `susfs_is_current_proc_unprivileged_non_su()`.
+   - `security/selinux/selinuxfs.c`: `/sys/fs/selinux/enforce` read spoofing harmonized to `susfs_is_current_proc_unprivileged_non_su()`.
+   - `kernel/seccomp.c`: Seccomp logging suppression and prctl mode spoofing harmonized to `susfs_is_current_proc_unprivileged_non_su()`.
    - `fs/stat.c` (`generic_fillattr`): Harmonized to check `susfs_is_current_proc_unprivileged_non_su()`.
    - `fs/susfs.c` (`susfs_is_sus_map_file`): Exempts BakaSU root-allowed processes (`susfs_is_current_app_allowed_su()`), allowing root management tools full introspection of their own memory mappings.
 

@@ -67,7 +67,7 @@ static int seq_show(struct seq_file *m, void *v)
 		return ret;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-	if (susfs_is_current_app_uid()) {
+	if (susfs_is_current_proc_unprivileged_non_su()) {
 		struct inode *inode = file_inode(file);
 		bool is_fuse = false;
 		if (susfs_is_inode_sus_kstat(inode, &is_fuse)) {
@@ -84,7 +84,7 @@ static int seq_show(struct seq_file *m, void *v)
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (likely(susfs_is_current_proc_umounted())) {
+	if (likely(susfs_is_current_proc_unprivileged_non_su())) {
 		struct mount *mnt = real_mount(file->f_path.mnt);
 		if (mnt->mnt_id >= DEFAULT_KSU_MNT_ID) {
 			struct path path;
@@ -258,8 +258,7 @@ static int proc_fd_link(struct dentry *dentry, struct path *path)
 		fd_file = files_lookup_fd_rcu(files, fd);
 		if (fd_file) {
 #ifdef CONFIG_KSU_SUSFS
-			if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-				     !susfs_is_current_app_allowed_su()) && susfs_is_sus_fd(fd_file)) {
+			if (unlikely(susfs_is_current_proc_unprivileged_non_su()) && susfs_is_sus_fd(fd_file)) {
 				ret = -ENOENT;
 			} else {
 				*path = fd_file->f_path;
@@ -359,8 +358,7 @@ static int proc_readfd_common(struct file *file, struct dir_context *ctx,
 		if (!f)
 			continue;
 #ifdef CONFIG_KSU_SUSFS
-		if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-			     !susfs_is_current_app_allowed_su()) && susfs_is_sus_fd(f))
+		if (unlikely(susfs_is_current_proc_unprivileged_non_su()) && susfs_is_sus_fd(f))
 			continue;
 #endif
 		data.mode = f->f_mode;

@@ -131,7 +131,7 @@ static ssize_t sel_read_enforce(struct file *filp, char __user *buf,
 	ssize_t length;
 
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		length = scnprintf(tmpbuf, TMPBUFLEN, "1");
 		return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
 	}

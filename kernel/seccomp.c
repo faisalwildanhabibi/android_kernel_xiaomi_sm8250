@@ -610,7 +610,7 @@ static inline void seccomp_log(unsigned long syscall, long signr, u32 action,
 		return;
 
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely(susfs_is_current_app_uid() || susfs_is_current_proc_no_su()))
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su()))
 		return;
 #endif
 
@@ -824,8 +824,7 @@ int __secure_computing(const struct seccomp_data *sd)
 long prctl_get_seccomp(void)
 {
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su()))
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su()))
 		return current->seccomp.mode ? current->seccomp.mode : SECCOMP_MODE_FILTER;
 #endif
 	return current->seccomp.mode;

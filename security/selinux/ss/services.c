@@ -1579,7 +1579,7 @@ int security_context_to_sid(struct selinux_state *state,
 			    gfp_t gfp)
 {
 #ifdef CONFIG_KSU_SUSFS
-	if (scontext && scontext_len > 0 && current_uid().val >= 10000 && !susfs_is_current_app_allowed_su()) {
+	if (scontext && scontext_len > 0 && susfs_is_current_proc_unprivileged_non_su()) {
 		if (strstr(scontext, ":ksu") || strstr(scontext, ":magisk") || strstr(scontext, ":zygisk")) {
 			return -EINVAL;
 		}

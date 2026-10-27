@@ -255,9 +255,11 @@ static inline void susfs_clear_current_proc_no_su(void) {
 }
 
 static inline bool susfs_is_current_proc_unprivileged_non_su(void) {
+	if (unlikely(susfs_is_current_app_allowed_su()))
+		return false;
 	return susfs_is_current_proc_umounted_app() ||
-	       ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-	        !susfs_is_current_app_allowed_su());
+	       susfs_is_current_app_uid() ||
+	       susfs_is_current_proc_no_su();
 }
 
 #define SUSFS_IS_INODE_SUS_MAP(inode) \
