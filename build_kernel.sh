@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Exit on any error
-set -e
+# Exit on any error or pipeline failure
+set -eo pipefail
 
 # ==========================================
 # Argument Parsing
@@ -571,6 +571,36 @@ build_target() {
     echo "[+] Compatibility verification passed successfully!"
     echo "==========================================="
 
+    # ----------------------------------------------------
+    # Zero-Divergence Config Integrity Verification Gate
+    # ----------------------------------------------------
+    echo "[*] Running Zero-Divergence Config Integrity Verification Gate..."
+    local REQUIRED_CONFIGS=(
+        "CONFIG_TCP_CONG_BBR=y"
+        "CONFIG_DEFAULT_BBR=y"
+        "CONFIG_NET_SCH_FQ=y"
+        "CONFIG_FORCE_FAST_CHARGE=y"
+        "CONFIG_HZ_300=y"
+        "CONFIG_SCHED_CASS=y"
+        "CONFIG_CRYPTO_ZSTD=y"
+    )
+    if [ "$ENABLE_KSU" -eq 1 ]; then
+        REQUIRED_CONFIGS+=(
+            "CONFIG_KSU=y"
+            "CONFIG_KSU_SUSFS=y"
+            "CONFIG_KSU_SUSFS_SUS_PATH=y"
+            "CONFIG_KSU_SUSFS_SUS_MOUNT=y"
+            "CONFIG_KSU_SUSFS_SUS_KSTAT=y"
+            "CONFIG_KSU_SUSFS_SUS_MAP=y"
+        )
+    fi
+    for cfg in "${REQUIRED_CONFIGS[@]}"; do
+        if ! grep -q "^${cfg}" "${OUT_DIR}/.config"; then
+            echo "[-] [FAIL-FAST ABORT] Critical configuration '${cfg}' missing or unsatisfied in ${OUT_DIR}/.config!"
+            exit 1
+        fi
+    done
+    echo "[+] All critical kernel configurations verified present and active."
 
     # ----------------------------------------------------
     # Compilation
@@ -631,6 +661,13 @@ build_target() {
         zip -r9 "$ZIP_FILENAME" ./* -x .git .gitignore out/ ./*.zip > /dev/null
         mv "$ZIP_FILENAME" ../
         popd > /dev/null
+
+        # Verify ZIP archive integrity
+        if ! zip -T "$ZIP_FILENAME" > /dev/null 2>&1; then
+            echo "[-] [FAIL-FAST ABORT] AnyKernel3 zip archive '$ZIP_FILENAME' corrupted or failed integrity check!"
+            exit 1
+        fi
+        echo "[+] [PASS] AnyKernel3 flashable package verified cryptographically intact."
         
         echo "[+] $OS_TYPE kernel binaries successfully packed into: $ZIP_FILENAME"
     else
