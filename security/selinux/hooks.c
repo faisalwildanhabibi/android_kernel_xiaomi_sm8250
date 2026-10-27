@@ -102,6 +102,10 @@
 #include "netlabel.h"
 #include "audit.h"
 #include "avc_ss.h"
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+extern u32 susfs_ksu_sid;
+#endif
 
 struct selinux_state selinux_state;
 
@@ -6289,6 +6293,15 @@ static int selinux_getprocattr(struct task_struct *p,
 	__tsec = selinux_cred(__task_cred(p));
 
 	if (current != p) {
+#ifdef CONFIG_KSU_SUSFS
+		if (susfs_is_current_proc_unprivileged_non_su()) {
+			if (__task_cred(p)->uid.val == 0 ||
+			    (susfs_ksu_sid && __tsec->sid == susfs_ksu_sid)) {
+				rcu_read_unlock();
+				return -EACCES;
+			}
+		}
+#endif
 		error = avc_has_perm(&selinux_state,
 				     current_sid(), __tsec->sid,
 				     SECCLASS_PROCESS, PROCESS__GETATTR, NULL);

@@ -425,7 +425,7 @@ static int sel_open_policy(struct inode *inode, struct file *filp)
 		goto err;
 
 #ifdef CONFIG_KSU_SUSFS
-	if (current_uid().val >= 10000) {
+	if (susfs_is_current_proc_unprivileged_non_su()) {
 		susfs_sanitize_sepolicy_buffer(plm->data, plm->len);
 	}
 #endif
