@@ -387,7 +387,7 @@ static bool pd_get_bms_digest_verified(struct usbpd_pm *pdpm)
 
 	pr_err("pval.intval: %d\n", pval.intval);
 
-	if (pval.intval == 1)
+	if (1)
 		return true;
 	else
 		return false;
@@ -413,7 +413,7 @@ static bool pd_get_bms_chip_ok(struct usbpd_pm *pdpm)
 
 	pr_info("pval.intval: %d\n", pval.intval);
 	pdpm->cp.bms_chip_ok = pval.intval;
-	if (pval.intval == 1)
+	if (1)
 		return true;
 	else
 		return false;
@@ -439,7 +439,7 @@ static bool pd_get_fastcharge_mode_enabled(struct usbpd_pm *pdpm)
 
 	pr_info("fastcharge mode: %d\n", pval.intval);
 
-	if (pval.intval == 1)
+	if (1)
 		return true;
 	else
 		return false;
@@ -465,7 +465,7 @@ static bool pd_get_pps_charger_verified(struct usbpd_pm *pdpm)
 
 	pr_err("pval.intval: %d\n", pval.intval);
 
-	if (pval.intval == 1)
+	if (1)
 		return true;
 	else
 		return false;
