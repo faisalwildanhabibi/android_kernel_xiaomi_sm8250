@@ -189,7 +189,7 @@ static int pd_get_batt_step_vfloat_index(struct usbpd_pm *pdpm, int *step_index)
 		return rc;
 	}
 
-	pr_err("pval.intval: %d\n", pval.intval);
+	pr_debug("pval.intval: %d\n", pval.intval);
 
 	*step_index = pval.intval;
 	return rc;
@@ -277,6 +277,9 @@ static void pd_bq_check_ibus_to_enable_dual_bq(struct usbpd_pm *pdpm,
 	int capacity = 0;
 
 	pd_get_batt_capacity(pdpm, &capacity);
+	if (!pm_config.cp_sec_enable)
+		return;
+
 	if (ibus_ma <= IBUS_THRESHOLD_MA_FOR_DUAL_BQ &&
 	    !pdpm->no_need_en_slave_bq &&
 	    (pdpm->slave_bq_disabled_check_count <
@@ -381,16 +384,11 @@ static bool pd_get_bms_digest_verified(struct usbpd_pm *pdpm)
 	rc = power_supply_get_property(pdpm->bms_psy,
 				       POWER_SUPPLY_PROP_AUTHENTIC, &pval);
 	if (rc < 0) {
-		pr_info("Couldn't get fastcharge mode:%d\n", rc);
-		return false;
+		pr_debug("Couldn't get fastcharge mode:%d\n", rc);
+		return true;
 	}
 
-	pr_err("pval.intval: %d\n", pval.intval);
-
-	if (1)
-		return true;
-	else
-		return false;
+	return (pval.intval == 1);
 }
 
 /* get bq27z561 chip ok*/
@@ -463,7 +461,7 @@ static bool pd_get_pps_charger_verified(struct usbpd_pm *pdpm)
 		return false;
 	}
 
-	pr_err("pval.intval: %d\n", pval.intval);
+	pr_debug("pval.intval: %d\n", pval.intval);
 
 	if (1)
 		return true;
@@ -549,10 +547,13 @@ static void usbpd_check_cp_psy(struct usbpd_pm *pdpm)
 
 static void usbpd_check_cp_sec_psy(struct usbpd_pm *pdpm)
 {
+	if (!pm_config.cp_sec_enable)
+		return;
+
 	if (!pdpm->cp_sec_psy) {
 		pdpm->cp_sec_psy = power_supply_get_by_name("bq2597x-slave");
 		if (!pdpm->cp_sec_psy)
-			pr_err("cp_sec_psy not found\n");
+			pr_debug("cp_sec_psy not found\n");
 	}
 }
 
@@ -728,6 +729,9 @@ static int usbpd_pm_enable_cp_sec(struct usbpd_pm *pdpm, bool enable)
 		0,
 	};
 
+	if (!pm_config.cp_sec_enable)
+		return 0;
+
 	usbpd_check_cp_sec_psy(pdpm);
 
 	if (!pdpm->cp_sec_psy)
@@ -769,6 +773,9 @@ static int usbpd_pm_check_cp_sec_enabled(struct usbpd_pm *pdpm)
 		0,
 	};
 
+	if (!pm_config.cp_sec_enable)
+		return 0;
+
 	usbpd_check_cp_sec_psy(pdpm);
 
 	if (!pdpm->cp_sec_psy)
@@ -789,6 +796,9 @@ static int usbpd_pm_check_sec_batt_present(struct usbpd_pm *pdpm)
 	union power_supply_propval val = {
 		0,
 	};
+
+	if (!pm_config.cp_sec_enable)
+		return 0;
 
 	usbpd_check_cp_sec_psy(pdpm);
 

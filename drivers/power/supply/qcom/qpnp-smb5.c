@@ -2065,8 +2065,8 @@ static int smb5_usb_main_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_HEALTH:
 		val->intval = smblib_get_prop_smb_health(chg);
 		if (val->intval < 0) {
-			rc = val->intval;
 			val->intval = POWER_SUPPLY_HEALTH_UNKNOWN;
+			rc = 0;
 		}
 		break;
 	/* Use this property to report overheat status */

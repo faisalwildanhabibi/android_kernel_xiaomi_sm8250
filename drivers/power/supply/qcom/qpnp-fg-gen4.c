@@ -5397,8 +5397,14 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_KI_COEFF_CURRENT:
 		pval->intval = chip->dt.ffc_ki_coeff_med_hi_chg_thr_ma;
 		break;
+	case POWER_SUPPLY_PROP_ONLINE:
+		pval->intval = 1;
+		break;
+	case POWER_SUPPLY_PROP_SCOPE:
+		pval->intval = POWER_SUPPLY_SCOPE_SYSTEM;
+		break;
 	default:
-		pr_err("unsupported property %d\n", psp);
+		pr_debug("unsupported property %d\n", psp);
 		rc = -EINVAL;
 		break;
 	}
@@ -5555,6 +5561,8 @@ static int fg_property_is_writeable(struct power_supply *psy,
 }
 
 static enum power_supply_property fg_psy_props[] = {
+	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_SCOPE,
 #ifdef CONFIG_BATT_VERIFY_BY_DS28E16
 	POWER_SUPPLY_PROP_AUTHENTIC,
 	POWER_SUPPLY_PROP_ROMID,
