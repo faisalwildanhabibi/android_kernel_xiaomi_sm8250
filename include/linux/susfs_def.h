@@ -122,13 +122,7 @@ static inline bool susfs_is_sus_su_path(const char *name) {
 		return false;
 
 	/* Exact match for relative lookups or directory entries */
-	if (!strcmp(name, "su") || !strcmp(name, "daemonsu") || !strcmp(name, "ksud") ||
-	    !strcmp(name, "zygote_next") || !strcmp(name, "usap_pool_primary") ||
-	    !strcmp(name, "usap_pool_secondary"))
-		return true;
-
-	/* Path prefix checks */
-	if (!strcmp(name, "/data/adb") || susfs_starts_with(name, "/data/adb/"))
+	if (!strcmp(name, "su") || !strcmp(name, "daemonsu") || !strcmp(name, "ksud"))
 		return true;
 
 	len = strlen(name);
@@ -155,22 +149,6 @@ static inline bool susfs_is_sus_su_path(const char *name) {
 
 	/* Any path ending with "/ksud/" */
 	if (len >= 6 && !strcmp(name + len - 6, "/ksud/"))
-		return true;
-
-	/* Any path ending with "/zygote_next" */
-	if (len >= 12 && !strcmp(name + len - 12, "/zygote_next"))
-		return true;
-
-	/* Any path ending with "/zygote_next/" */
-	if (len >= 13 && !strcmp(name + len - 13, "/zygote_next/"))
-		return true;
-
-	/* Any path ending with "/usap_pool_primary" */
-	if (len >= 18 && !strcmp(name + len - 18, "/usap_pool_primary"))
-		return true;
-
-	/* Any path ending with "/usap_pool_secondary" */
-	if (len >= 20 && !strcmp(name + len - 20, "/usap_pool_secondary"))
 		return true;
 
 	return false;

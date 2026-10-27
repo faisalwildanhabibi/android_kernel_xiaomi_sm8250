@@ -137,49 +137,6 @@ out_copy_to_user:
 	SUSFS_LOGI("CMD_SUSFS_ADD_SUS_PATH_LOOP -> ret: %d\n", info.err);
 }
 
-static void susfs_add_default_sus_path_loop(const char *target_pathname) {
-	struct st_susfs_sus_path_list *new_list = NULL;
-
-	if (!target_pathname || *target_pathname == '\0') {
-		return;
-	}
-
-	new_list = kzalloc(sizeof(struct st_susfs_sus_path_list), GFP_KERNEL);
-	if (!new_list) {
-		return;
-	}
-	strscpy(new_list->info.target_pathname, target_pathname, SUSFS_MAX_LEN_PATHNAME);
-	strscpy(new_list->target_pathname, target_pathname, SUSFS_MAX_LEN_PATHNAME);
-	INIT_LIST_HEAD(&new_list->list);
-	mutex_lock(&susfs_mutex_lock_sus_path);
-	list_add_tail_rcu(&new_list->list, &LH_SUS_PATH_LOOP);
-	mutex_unlock(&susfs_mutex_lock_sus_path);
-	SUSFS_LOGI("default target_pathname: '%s' added to LH_SUS_PATH_LOOP\n", target_pathname);
-}
-
-static void susfs_init_default_sus_paths(void) {
-	static const char * const default_sus_paths[] = {
-		"/data/adb",
-		"/data/adb/ksu",
-		"/data/adb/modules",
-		"/data/adb/modules_update",
-		"/data/adb/post-fs-data.d",
-		"/data/adb/service.d",
-		"/data/adb/boot-completed.d",
-		"/data/adb/lspd",
-		"/dev/socket/zygote_next",
-		"/dev/socket/usap_pool_primary",
-		"/dev/socket/usap_pool_secondary",
-		"/system/bin/su",
-		"/system/xbin/su",
-	};
-	size_t i;
-
-	for (i = 0; i < ARRAY_SIZE(default_sus_paths); i++) {
-		susfs_add_default_sus_path_loop(default_sus_paths[i]);
-	}
-}
-
 static void susfs_run_sus_path_loop(void) {
 	struct st_susfs_sus_path_list *cursor = NULL;
 	struct path path;
@@ -1738,9 +1695,6 @@ static void susfs_load_dynamic_socks(struct work_struct *work)
 
 	kfree(buf);
 	pr_info("susfs: dynamic socket patterns loaded: %d entries\n", count);
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	susfs_run_sus_path_loop();
-#endif
 }
 
 void susfs_reload_dynamic_socks(void)
@@ -1751,9 +1705,6 @@ void susfs_reload_dynamic_socks(void)
 /* susfs_init */
 void susfs_init(void) {
 	SUSFS_LOGI("Initializing susfs_extra_works\n");
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	susfs_init_default_sus_paths();
-#endif
 	INIT_WORK(&susfs_extra_works, susfs_run_extra_works);
 	INIT_DELAYED_WORK(&susfs_load_socks_dwork, susfs_load_dynamic_socks);
 	schedule_delayed_work(&susfs_load_socks_dwork, msecs_to_jiffies(15000));
