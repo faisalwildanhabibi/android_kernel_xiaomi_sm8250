@@ -583,6 +583,8 @@ build_target() {
         "CONFIG_HZ_300=y"
         "CONFIG_SCHED_CASS=y"
         "CONFIG_CRYPTO_ZSTD=y"
+        "CONFIG_RMNET_PERF=y"
+        "CONFIG_RMNET_SHS=y"
     )
     if [ "$ENABLE_KSU" -eq 1 ]; then
         REQUIRED_CONFIGS+=(
