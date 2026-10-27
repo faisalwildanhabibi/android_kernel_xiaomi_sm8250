@@ -2865,6 +2865,24 @@ static ssize_t proc_pid_attr_read(struct file * file, char __user * buf,
 	if (!task)
 		return -ESRCH;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su()) && task != current) {
+		const struct cred *tcred;
+		bool is_root = false;
+
+		rcu_read_lock();
+		tcred = __task_cred(task);
+		if (tcred && __kuid_val(tcred->uid) == 0)
+			is_root = true;
+		rcu_read_unlock();
+
+		if (is_root) {
+			put_task_struct(task);
+			return -EACCES;
+		}
+	}
+#endif
+
 	length = security_getprocattr(task, PROC_I(inode)->op.lsm,
 				      (char*)file->f_path.dentry->d_name.name,
 				      &p);

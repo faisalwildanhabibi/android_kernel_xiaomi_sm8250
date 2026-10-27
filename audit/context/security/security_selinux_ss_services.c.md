@@ -17,38 +17,16 @@ Pada kernel SM8250 ini, `services.c` dimodifikasi secara mendalam oleh **SuSFS (
   ```c
   #ifdef CONFIG_KSU_SUSFS
   if (scontext && scontext_len > 0 && susfs_is_current_proc_unprivileged_non_su()) {
-      if (strstr(scontext, ":su:") || strstr(scontext, ":ksu") ||
-          strstr(scontext, ":magisk") || strstr(scontext, ":zygisk") ||
-          strstr(scontext, "zygote_next")) {
+      if (strstr(scontext, ":ksu") || strstr(scontext, ":magisk") || strstr(scontext, ":zygisk")) {
           return -EINVAL;
       }
   }
   #endif
   ```
-- **Mekanisme**: Salah satu teknik deteksi root paling canggih yang digunakan oleh modul proteksi aplikasi perbankan dan game anti-cheat adalah memanggil fungsi native `selinux_check_access` atau `security_context_to_sid()` dengan string konteks root khusus (misal `"u:r:su:s0"`, `"u:r:magisk:s0"`, `"u:r:ksu:s0"`, atau `"u:r:zygisk:s0"`). Jika kernel mengembalikan SID valid (sukses), aplikasi menyimpulkan bahwa perangkat telah di-root karena domain tersebut tidak ada di ROM standar.
-- **Efek SuSFS**: Jika pemanggil adalah aplikasi biasa tanpa izin superuser (`susfs_is_current_proc_unprivileged_non_su()`), SuSFS langsung mengembalikan error `-EINVAL` (Invalid Argument) seolah-olah domain tersebut tidak pernah didefinisikan di dalam kebijakan SELinux perangkat, mematahkan deteksi probing konteks secara sempurna.
+- **Mekanisme**: Mencegat probing keberadaan domain root oleh aplikasi ruang pengguna tanpa izin superuser.
 
-### Hook 2: Reverse SID-to-Context Cloaking (`security_sid_to_context_core`)
-- Di dalam pemanggilan `security_sid_to_context_core()`:
-  ```c
-  #ifdef CONFIG_KSU_SUSFS
-  if (!rc && scontext && *scontext && susfs_is_current_proc_unprivileged_non_su()) {
-      if ((susfs_ksu_sid && sid == susfs_ksu_sid) ||
-          strstr(*scontext, ":su:") ||
-          strstr(*scontext, ":ksu") ||
-          strstr(*scontext, ":magisk") ||
-          strstr(*scontext, ":zygisk") ||
-          strstr(*scontext, "zygote_next")) {
-          kfree(*scontext);
-          *scontext = NULL;
-          *scontext_len = 0;
-          rc = -EACCES;
-      }
-  }
-  #endif
-  ```
-- **Mekanisme**: Ketika aplikasi non-root menginspeksi file context (`lgetfilecon()`, `getfilecon()`, `getxattr`) atau membaca atribut SELinux proses lain (`/proc/[pid]/attr/current`), fungsi ini memetakan SID ke representasi string konteks teks.
-- **Efek SuSFS**: Mencegah kebocoran konteks root (`u:r:su:s0`, `u:object_r:zygote_next_socket:s0`, dsb.) ke aplikasi unprivileged dengan mengembalikan `-EACCES`, menyembunyikan identitas root secara total sementara membiarkan akses penuh bagi manajer BakaSU dan proses root berwenang.
+### Catatan Keamanan Arsitektur Core SELinux
+- Fungsi konversi internal inti `security_sid_to_context_core()` sengaja dibiarkan murni (*untouched*) tanpa injeksi gating userspace. Pengecekan atribut proses root (`/proc/[pid]/attr/current`) dipindahkan secara aman ke lapisan VFS procfs (`fs/proc/base.c:proc_pid_attr_read`) untuk mengeliminasi risiko dereferensi struktur belum terinisialisasi pada fase *early boot* kernel.
 
 ## 4. Kamus Terminologi Khusus
 - **`Context-to-SID Resolution`**: Resolusi nama string keamanan pengguna ke integer 32-bit yang digunakan oleh tabel tabel AVC kernel.

@@ -51,7 +51,6 @@
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/cred.h>
 #include <linux/susfs_def.h>
-extern u32 susfs_ksu_sid;
 #endif
 #include <linux/mutex.h>
 #include <linux/flex_array.h>
@@ -1355,21 +1354,6 @@ static int security_sid_to_context_core(struct selinux_state *state,
 				      scontext_len);
 out_unlock:
 	read_unlock(&state->ss->policy_rwlock);
-#ifdef CONFIG_KSU_SUSFS
-	if (!rc && scontext && *scontext && susfs_is_current_proc_unprivileged_non_su()) {
-		if ((susfs_ksu_sid && sid == susfs_ksu_sid) ||
-		    strstr(*scontext, ":su:") ||
-		    strstr(*scontext, ":ksu") ||
-		    strstr(*scontext, ":magisk") ||
-		    strstr(*scontext, ":zygisk") ||
-		    strstr(*scontext, "zygote_next")) {
-			kfree(*scontext);
-			*scontext = NULL;
-			*scontext_len = 0;
-			rc = -EACCES;
-		}
-	}
-#endif
 out:
 	return rc;
 
@@ -1596,9 +1580,7 @@ int security_context_to_sid(struct selinux_state *state,
 {
 #ifdef CONFIG_KSU_SUSFS
 	if (scontext && scontext_len > 0 && susfs_is_current_proc_unprivileged_non_su()) {
-		if (strstr(scontext, ":su:") || strstr(scontext, ":ksu") ||
-		    strstr(scontext, ":magisk") || strstr(scontext, ":zygisk") ||
-		    strstr(scontext, "zygote_next")) {
+		if (strstr(scontext, ":ksu") || strstr(scontext, ":magisk") || strstr(scontext, ":zygisk")) {
 			return -EINVAL;
 		}
 	}
