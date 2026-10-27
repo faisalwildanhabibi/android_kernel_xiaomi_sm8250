@@ -315,6 +315,7 @@ void susfs_sanitize_sepolicy_buffer(void *data, size_t len);
 void susfs_filter_environ_buffer(char *buf, size_t *len);
 void susfs_spoof_comm(struct task_struct *task, char *buf);
 bool susfs_is_sus_fd(struct file *file);
+bool susfs_is_task_from_sus_path(struct task_struct *task);
 #endif
 
 #endif

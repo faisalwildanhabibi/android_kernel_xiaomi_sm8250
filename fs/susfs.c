@@ -1978,4 +1978,25 @@ bool susfs_is_sus_fd(struct file *file)
 
 	return false;
 }
+
+bool susfs_is_task_from_sus_path(struct task_struct *task)
+{
+	struct file *exe_file;
+	struct inode *inode;
+	bool res = false;
+
+	if (!task || !task->mm)
+		return false;
+
+	exe_file = get_task_exe_file(task);
+	if (!exe_file)
+		return false;
+
+	inode = file_inode(exe_file);
+	if (inode) {
+		res = test_bit(AS_FLAGS_SUS_PATH, &inode->i_state);
+	}
+	fput(exe_file);
+	return res;
+}
 #endif

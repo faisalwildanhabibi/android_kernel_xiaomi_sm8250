@@ -372,6 +372,10 @@ static ssize_t proc_pid_cmdline_read(struct file *file, char __user *buf,
 		return -ESRCH;
 #ifdef CONFIG_KSU_SUSFS
 	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
+		if (susfs_is_task_from_sus_path(tsk)) {
+			put_task_struct(tsk);
+			return 0;
+		}
 		char comm[TASK_COMM_LEN];
 		get_task_comm(comm, tsk);
 		susfs_spoof_comm(tsk, comm);
@@ -1888,6 +1892,13 @@ static int proc_exe_link(struct dentry *dentry, struct path *exe_path)
 	task = get_proc_task(d_inode(dentry));
 	if (!task)
 		return -ENOENT;
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su()) &&
+	    susfs_is_task_from_sus_path(task)) {
+		put_task_struct(task);
+		return -ENOENT;
+	}
+#endif
 	exe_file = get_task_exe_file(task);
 	put_task_struct(task);
 	if (exe_file) {
@@ -3842,6 +3853,14 @@ struct dentry *proc_pid_lookup(struct inode *dir, struct dentry * dentry, unsign
 	if (!task)
 		goto out;
 
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su()) &&
+	    susfs_is_task_from_sus_path(task)) {
+		put_task_struct(task);
+		goto out;
+	}
+#endif
+
 	result = proc_pid_instantiate(dentry, task, NULL);
 	put_task_struct(task);
 out:
@@ -3922,6 +3941,12 @@ int proc_pid_readdir(struct file *file, struct dir_context *ctx)
 	     iter.tgid += 1, iter = next_tgid(ns, iter)) {
 		char name[10 + 1];
 		unsigned int len;
+
+#ifdef CONFIG_KSU_SUSFS
+		if (unlikely(susfs_is_current_proc_unprivileged_non_su()) &&
+		    susfs_is_task_from_sus_path(iter.task))
+			continue;
+#endif
 
 		cond_resched();
 		if (!has_pid_permissions(ns, iter.task, HIDEPID_INVISIBLE))

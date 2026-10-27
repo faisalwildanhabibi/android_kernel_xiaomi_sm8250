@@ -114,7 +114,10 @@ void proc_task_name(struct seq_file *m, struct task_struct *p, bool escape)
 
 #ifdef CONFIG_KSU_SUSFS
 	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
-		susfs_spoof_comm(p, tcomm);
+		if (susfs_is_task_from_sus_path(p))
+			strlcpy(tcomm, "Jit thread pool", sizeof(tcomm));
+		else
+			susfs_spoof_comm(p, tcomm);
 	}
 #endif
 
