@@ -113,8 +113,7 @@ void proc_task_name(struct seq_file *m, struct task_struct *p, bool escape)
 		__get_task_comm(tcomm, sizeof(tcomm), p);
 
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		susfs_spoof_comm(p, tcomm);
 	}
 #endif
@@ -381,8 +380,7 @@ static inline void task_seccomp(struct seq_file *m, struct task_struct *p)
 	seq_put_decimal_ull(m, "NoNewPrivs:\t", task_no_new_privs(p));
 #ifdef CONFIG_SECCOMP
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode ? p->seccomp.mode : SECCOMP_MODE_FILTER);
 	} else {
 		seq_put_decimal_ull(m, "\nSeccomp:\t", p->seccomp.mode);

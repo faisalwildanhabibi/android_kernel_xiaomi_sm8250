@@ -1101,7 +1101,12 @@ out_srcu_read_unlock:
 
 int susfs_open_redirect_spoof_vfs_readlink(struct inode *inode, char __user *buffer, int buflen) {
 	struct st_susfs_open_redirect_hlist *entry = NULL;
-	int srcu_idx = srcu_read_lock(&susfs_srcu_open_redirect);
+	int srcu_idx;
+
+	if (!susfs_is_current_proc_unprivileged_non_su())
+		return -ENOENT;
+
+	srcu_idx = srcu_read_lock(&susfs_srcu_open_redirect);
 
 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
 		if (entry->reversed_lookup_only &&
@@ -1129,7 +1134,12 @@ int susfs_open_redirect_spoof_vfs_readlink(struct inode *inode, char __user *buf
 
 int susfs_open_redirect_spoof_do_proc_readlink(struct inode *inode, char *tmp_buf, int buflen) {
 	struct st_susfs_open_redirect_hlist *entry = NULL;
-	int srcu_idx = srcu_read_lock(&susfs_srcu_open_redirect);
+	int srcu_idx;
+
+	if (!susfs_is_current_proc_unprivileged_non_su())
+		return -ENOENT;
+
+	srcu_idx = srcu_read_lock(&susfs_srcu_open_redirect);
 
 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
 		if (entry->reversed_lookup_only &&

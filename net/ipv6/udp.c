@@ -1597,8 +1597,7 @@ static const struct inet6_protocol udpv6_protocol = {
 int udp6_seq_show(struct seq_file *seq, void *v)
 {
 #ifdef CONFIG_KSU_SUSFS
-	if ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-	    !susfs_is_current_app_allowed_su() && v != SEQ_START_TOKEN) {
+	if (susfs_is_current_proc_unprivileged_non_su() && v != SEQ_START_TOKEN) {
 		struct inet_sock *inet = inet_sk(v);
 		if (inet && (susfs_is_sus_port(ntohs(inet->inet_sport)) ||
 			     susfs_is_sus_port(ntohs(inet->inet_dport))))

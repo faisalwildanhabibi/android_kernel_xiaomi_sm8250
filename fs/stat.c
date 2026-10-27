@@ -209,8 +209,7 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 		return retval;
 	retval = vfs_getattr_nosec(path, stat, request_mask, query_flags);
 #ifdef CONFIG_KSU_SUSFS
-	if (!retval && unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-				!susfs_is_current_app_allowed_su())) {
+	if (!retval && unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		susfs_spoof_statx_for_non_su(path, stat);
 	}
 #endif
@@ -296,8 +295,7 @@ retry:
 	fname = getname_flags(filename, lookup_flags, NULL);
 
 	if (fname && !IS_ERR(fname) && fname->name) {
-		if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-			     !susfs_is_current_app_allowed_su())) {
+		if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 			if (susfs_is_sus_su_path(fname->name)) {
 				putname(fname);
 				return -ENOENT;
@@ -530,8 +528,7 @@ static int do_readlinkat(int dfd, const char __user *pathname,
 		return -EINVAL;
 
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		struct filename *tmp_name = getname(pathname);
 		if (!IS_ERR(tmp_name)) {
 			if (tmp_name->name && susfs_is_sus_su_path(tmp_name->name)) {

@@ -265,8 +265,7 @@ static int filldir(struct dir_context *ctx, const char *name, int namlen,
 	if (unlikely(buf->error))
 		return buf->error;
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		if (susfs_is_sus_su_path(name))
 			return 0;
 	}
@@ -399,8 +398,7 @@ static int filldir64(struct dir_context *ctx, const char *name, int namlen,
 	if (unlikely(buf->error))
 		return buf->error;
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		if (susfs_is_sus_su_path(name))
 			return 0;
 	}

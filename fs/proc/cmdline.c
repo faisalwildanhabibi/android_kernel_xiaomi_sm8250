@@ -44,8 +44,7 @@ static int cmdline_proc_show(struct seq_file *m, void *v)
 	}
 #endif
 #ifdef CONFIG_KSU_SUSFS
-	if (unlikely((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-		     !susfs_is_current_app_allowed_su())) {
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		proc_cmdline_show_sanitized(m, saved_command_line);
 		seq_putc(m, '\n');
 		return 0;

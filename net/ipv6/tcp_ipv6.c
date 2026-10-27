@@ -1965,8 +1965,7 @@ static int tcp6_seq_show(struct seq_file *seq, void *v)
 	struct sock *sk = v;
 
 #ifdef CONFIG_KSU_SUSFS
-	if ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) &&
-	    !susfs_is_current_app_allowed_su() && v != SEQ_START_TOKEN) {
+	if (susfs_is_current_proc_unprivileged_non_su() && v != SEQ_START_TOKEN) {
 		if (sk->sk_state == TCP_TIME_WAIT) {
 			struct inet_timewait_sock *tw = inet_twsk(sk);
 			if (tw && (susfs_is_sus_port(ntohs(tw->tw_sport)) ||

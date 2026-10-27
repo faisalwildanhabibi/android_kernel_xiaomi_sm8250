@@ -2854,7 +2854,7 @@ static int unix_seq_show(struct seq_file *seq, void *v)
 		struct sock *s = v;
 		struct unix_sock *u = unix_sk(s);
 #if defined(CONFIG_KSU_SUSFS)
-		if ((susfs_is_current_app_uid() || susfs_is_current_proc_no_su()) && !susfs_is_current_app_allowed_su() && u->addr && u->addr->len > sizeof(short)) {
+		if (susfs_is_current_proc_unprivileged_non_su() && u->addr && u->addr->len > sizeof(short)) {
 			int ulen = u->addr->len - sizeof(short);
 			const char *usun = u->addr->name->sun_path;
 			if (UNIX_ABSTRACT(s)) {
