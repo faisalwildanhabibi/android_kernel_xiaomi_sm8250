@@ -2887,6 +2887,23 @@ static ssize_t proc_pid_attr_read(struct file * file, char __user * buf,
 				      (char*)file->f_path.dentry->d_name.name,
 				      &p);
 	put_task_struct(task);
+#ifdef CONFIG_KSU_SUSFS
+	if (length > 0 && p && unlikely(susfs_is_current_proc_unprivileged_non_su())) {
+		if (strstr(p, ":ksu:") || strstr(p, ":magisk:") || strstr(p, ":su:")) {
+			if (task == current) {
+				static const char spoof_con[] = "u:r:untrusted_app:s0:c512,c768\n";
+				kfree(p);
+				p = kstrdup(spoof_con, GFP_KERNEL);
+				if (!p)
+					return -ENOMEM;
+				length = sizeof(spoof_con) - 1;
+			} else {
+				kfree(p);
+				return -EACCES;
+			}
+		}
+	}
+#endif
 	if (length > 0)
 		length = simple_read_from_buffer(buf, count, ppos, p, length);
 	kfree(p);

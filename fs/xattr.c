@@ -21,6 +21,9 @@
 #include <linux/audit.h>
 #include <linux/vmalloc.h>
 #include <linux/posix_acl_xattr.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+#endif
 
 #include <linux/uaccess.h>
 
@@ -376,6 +379,21 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
 		 */
 		if (ret == -EOPNOTSUPP)
 			goto nolsm;
+#ifdef CONFIG_KSU_SUSFS
+		if (ret > 0 && value && size > 0 && !strcmp(suffix, "selinux") &&
+		    unlikely(susfs_is_current_proc_unprivileged_non_su())) {
+			char *str = (char *)value;
+			if (strstr(str, "ksu_file") || strstr(str, "magisk_file") ||
+			    strstr(str, "su_exec") || strstr(str, "kernelsu")) {
+				static const char spoof_xattr[] = "u:object_r:system_file:s0";
+				size_t spoof_len = sizeof(spoof_xattr);
+				if (size >= spoof_len) {
+					memcpy(value, spoof_xattr, spoof_len);
+					ret = spoof_len;
+				}
+			}
+		}
+#endif
 		return ret;
 	}
 nolsm:
