@@ -372,11 +372,12 @@ static ssize_t proc_pid_cmdline_read(struct file *file, char __user *buf,
 		return -ESRCH;
 #ifdef CONFIG_KSU_SUSFS
 	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
+		char comm[TASK_COMM_LEN];
+
 		if (susfs_is_task_from_sus_path(tsk)) {
 			put_task_struct(tsk);
 			return 0;
 		}
-		char comm[TASK_COMM_LEN];
 		get_task_comm(comm, tsk);
 		susfs_spoof_comm(tsk, comm);
 		if (!strcmp(comm, "Jit thread pool")) {
