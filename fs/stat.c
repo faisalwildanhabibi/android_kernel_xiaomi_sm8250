@@ -94,7 +94,7 @@ int vfs_getattr_nosec(const struct path *path, struct kstat *stat,
 	query_flags &= KSTAT_QUERY_FLAGS;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-	if (susfs_is_current_app_uid()) {
+	if (susfs_is_current_proc_unprivileged_non_su()) {
 		bool is_fuse = false;
 		if (susfs_is_inode_sus_kstat(d_backing_inode(path->dentry), &is_fuse)) {
 			if (!is_fuse) {

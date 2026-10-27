@@ -1,16 +1,20 @@
-# Context Dossier: SuSFS Generic Unprivileged Non-SU Gating
+# Context Dossier: SuSFS & BakaSU Comprehensive Gating & Stealth Reinforcement
 
 ## 1. Functional Role & Architectural Purpose
-This enhancement strengthens kernel-level stealth gating without introducing hardcoded path strings into the kernel source tree. The kernel delegates all target paths to userspace management (via ReSuSFS `sus_paths.txt` and `sus_paths_loop.txt`), while the kernel enforces generic permission gating ensuring that any path registered by userspace is strictly concealed from all unprivileged non-su processes.
+This module enhancement unifies and hardens the permission gating and symbol resolution layers across SuSFS and BakaSU. It eliminates symbol leakage via procfs (`/proc/[pid]/wchan`, stack traces), harmonizes statx/getattr gating for unprivileged processes, and ensures that root-allowed managers maintain full diagnostic visibility while untrusted processes are subject to comprehensive stealth.
 
 ## 2. Technical Mechanism & Call Flow
-1. **Generic Unprivileged Gating (`susfs_is_inode_sus_path`)**:
-   - Replaced `susfs_is_current_proc_umounted_app()` with `susfs_is_current_proc_unprivileged_non_su()`.
-   - Previously, path hiding strictly depended on `TIF_PROC_UMOUNTED` (`susfs_is_current_proc_umounted_app`), which failed to conceal registered paths from unprivileged processes or isolated threads lacking the thread flag.
-   - Under the enhanced check, any process with `(uid >= 10000 || TIF_PROC_NO_SU) && !susfs_is_current_app_allowed_su()` will have all registered `AS_FLAGS_SUS_PATH` inodes hidden with `-ENOENT` and omitted from `readdir` / `getdents64`.
-   - Root-granted processes (`susfs_is_current_app_allowed_su()`) and system domains (`uid < 10000`) retain full, unrestricted VFS access.
+1. **Unprivileged Non-SU Gating (`susfs_is_current_proc_unprivileged_non_su`)**:
+   - `fs/susfs.c` (`susfs_is_inode_sus_path`): Dynamically hides any inode registered by userspace ReSuSFS from all unprivileged non-su processes (`uid >= 10000 || TIF_PROC_NO_SU`) without requiring `TIF_PROC_UMOUNTED`.
+   - `fs/stat.c` (`generic_fillattr`): Harmonized to check `susfs_is_current_proc_unprivileged_non_su()`.
+   - `fs/susfs.c` (`susfs_is_sus_map_file`): Exempts BakaSU root-allowed processes (`susfs_is_current_app_allowed_su()`), allowing root management tools full introspection of their own memory mappings.
 
-2. **Decoupled Architecture & Userspace Dynamic Management**:
-   - Zero hardcoded path constants in kernel code.
-   - Path definitions remain strictly dynamic in ReSuSFS userspace configuration files (`sus_paths.txt`, `sus_paths_loop.txt`).
-   - ReSuSFS triggers kernel registration via standard `CMD_SUSFS_ADD_SUS_PATH` and `CMD_SUSFS_ADD_SUS_PATH_LOOP` ioctl interfaces.
+2. **Kallsyms & Wchan Leak Prevention (`kernel/kallsyms.c`)**:
+   - Extended `susfs_is_hidden_kallsym()` into `kallsyms_lookup()` and `lookup_symbol_name()`.
+   - Prevents KSU and SuSFS internal symbols from being leaked via `/proc/[pid]/wchan` (which now outputs `0`), stack unwinding, or kernel formatted addresses `%pS`.
+   - Leaves normal kernel symbols completely intact.
+
+3. **Userspace Module Harmony (ReSuSFS)**:
+   - Zero hardcoded path strings in kernel source code.
+   - All paths are managed dynamically through ReSuSFS `sus_paths.txt` and `sus_paths_loop.txt`.
+   - Early execution via `scripts_postfs.txt` registers all paths during the `post-fs-data` phase.

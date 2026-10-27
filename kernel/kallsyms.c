@@ -278,6 +278,59 @@ static unsigned long get_symbol_pos(unsigned long addr,
 	return low;
 }
 
+#ifdef CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
+static inline bool susfs_is_hidden_kallsym(const char *name)
+{
+	if (!name || !name[0])
+		return false;
+
+	if (susfs_starts_with(name, "ksu_") ||
+	    susfs_starts_with(name, "__ksu_") ||
+	    susfs_starts_with(name, "susfs_") ||
+	    susfs_starts_with(name, "sus_") ||
+	    susfs_starts_with(name, "SUS_") ||
+	    susfs_starts_with(name, "LH_SUS_") ||
+	    susfs_starts_with(name, "ksud") ||
+	    susfs_starts_with(name, "is_ksu_") ||
+	    susfs_starts_with(name, "is_manager_") ||
+	    susfs_starts_with(name, "escape_to_") ||
+	    susfs_starts_with(name, "setup_selinux") ||
+	    susfs_starts_with(name, "track_throne") ||
+	    susfs_starts_with(name, "on_post_fs_data") ||
+	    susfs_starts_with(name, "try_umount") ||
+	    susfs_starts_with(name, "kernelsu") ||
+	    susfs_starts_with(name, "bakasu") ||
+	    susfs_starts_with(name, "__initcall__kmod_kernelsu") ||
+	    susfs_starts_with(name, "apply_kernelsu") ||
+	    susfs_starts_with(name, "handle_sepolicy") ||
+	    susfs_starts_with(name, "getenforce") ||
+	    susfs_starts_with(name, "setenforce") ||
+	    susfs_starts_with(name, "is_zygote") ||
+	    !strcmp(name, "statfs_by_dentry") ||
+	    !strcmp(name, "fake_cmdline_or_bootconfig") ||
+	    !strcmp(name, "my_uname") ||
+	    !strcmp(name, "OPEN_REDIRECT_HLIST") ||
+	    !strcmp(name, "sdcard_cleanup_scheduled") ||
+	    !strcmp(name, "sdcard_cleanup_dwork") ||
+	    !strcmp(name, "g_watch") ||
+	    !strcmp(name, "watch_one_dir") ||
+	    !strcmp(name, "add_mark_on_inode") ||
+	    !strcmp(name, "is_i_uid_not_allowed") ||
+	    !strcmp(name, "copy_config_to_buf") ||
+	    strstr(name, "_ksu_") ||
+	    strstr(name, "_ksu.") ||
+	    strstr(name, ".ksu") ||
+	    susfs_ends_with(name, "_ksu") ||
+	    strstr(name, "kernelsu") ||
+	    strstr(name, "bakasu") ||
+	    strstr(name, "susfs"))
+	{
+		return true;
+	}
+	return false;
+}
+#endif
+
 /*
  * Lookup an address but don't bother to find any names.
  */
@@ -338,6 +391,10 @@ const char *kallsyms_lookup(unsigned long addr,
 
 found:
 	cleanup_symbol_name(namebuf);
+#ifdef CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
+	if (ret && susfs_is_hidden_kallsym(ret))
+		return NULL;
+#endif
 	return ret;
 }
 
@@ -364,6 +421,10 @@ int lookup_symbol_name(unsigned long addr, char *symname)
 
 found:
 	cleanup_symbol_name(symname);
+#ifdef CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
+	if (susfs_is_hidden_kallsym(symname))
+		return -ERANGE;
+#endif
 	return 0;
 }
 
@@ -635,59 +696,6 @@ static void *s_start(struct seq_file *m, loff_t *pos)
 static void s_stop(struct seq_file *m, void *p)
 {
 }
-
-#ifdef CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
-static inline bool susfs_is_hidden_kallsym(const char *name)
-{
-	if (!name || !name[0])
-		return false;
-
-	if (susfs_starts_with(name, "ksu_") ||
-	    susfs_starts_with(name, "__ksu_") ||
-	    susfs_starts_with(name, "susfs_") ||
-	    susfs_starts_with(name, "sus_") ||
-	    susfs_starts_with(name, "SUS_") ||
-	    susfs_starts_with(name, "LH_SUS_") ||
-	    susfs_starts_with(name, "ksud") ||
-	    susfs_starts_with(name, "is_ksu_") ||
-	    susfs_starts_with(name, "is_manager_") ||
-	    susfs_starts_with(name, "escape_to_") ||
-	    susfs_starts_with(name, "setup_selinux") ||
-	    susfs_starts_with(name, "track_throne") ||
-	    susfs_starts_with(name, "on_post_fs_data") ||
-	    susfs_starts_with(name, "try_umount") ||
-	    susfs_starts_with(name, "kernelsu") ||
-	    susfs_starts_with(name, "bakasu") ||
-	    susfs_starts_with(name, "__initcall__kmod_kernelsu") ||
-	    susfs_starts_with(name, "apply_kernelsu") ||
-	    susfs_starts_with(name, "handle_sepolicy") ||
-	    susfs_starts_with(name, "getenforce") ||
-	    susfs_starts_with(name, "setenforce") ||
-	    susfs_starts_with(name, "is_zygote") ||
-	    !strcmp(name, "statfs_by_dentry") ||
-	    !strcmp(name, "fake_cmdline_or_bootconfig") ||
-	    !strcmp(name, "my_uname") ||
-	    !strcmp(name, "OPEN_REDIRECT_HLIST") ||
-	    !strcmp(name, "sdcard_cleanup_scheduled") ||
-	    !strcmp(name, "sdcard_cleanup_dwork") ||
-	    !strcmp(name, "g_watch") ||
-	    !strcmp(name, "watch_one_dir") ||
-	    !strcmp(name, "add_mark_on_inode") ||
-	    !strcmp(name, "is_i_uid_not_allowed") ||
-	    !strcmp(name, "copy_config_to_buf") ||
-	    strstr(name, "_ksu_") ||
-	    strstr(name, "_ksu.") ||
-	    strstr(name, ".ksu") ||
-	    susfs_ends_with(name, "_ksu") ||
-	    strstr(name, "kernelsu") ||
-	    strstr(name, "bakasu") ||
-	    strstr(name, "susfs"))
-	{
-		return true;
-	}
-	return false;
-}
-#endif
 
 static int s_show(struct seq_file *m, void *p)
 {

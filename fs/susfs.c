@@ -1217,7 +1217,7 @@ bool susfs_is_sus_map_file(struct file *file)
 	struct inode *inode;
 	const char *name;
 
-	if (!file)
+	if (!file || susfs_is_current_app_allowed_su())
 		return false;
 
 	inode = file_inode(file);
