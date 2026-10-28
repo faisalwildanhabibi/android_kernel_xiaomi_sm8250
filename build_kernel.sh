@@ -429,7 +429,7 @@ build_target() {
             -e KSU_SUSFS_SPOOF_COMM \
             -e KSU_SUSFS_SUS_SU \
             -e KSU_SUSFS_TRY_UMOUNT \
-            -d KSU_SUSFS_ENABLE_LOG \
+            -e KSU_SUSFS_ENABLE_LOG \
             -d CFI \
             -d CFI_CLANG \
             -d CFI_CLANG_SHADOW \
