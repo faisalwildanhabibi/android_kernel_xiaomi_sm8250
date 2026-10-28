@@ -407,33 +407,35 @@ build_target() {
     echo "[*] Ensuring Baseband-guard is disabled and pure OEM release identity is enforced..."
     scripts/config --file "${OUT_DIR}/.config" -d BBG -d BPF_PRELOAD -d BPF_PRELOAD_UMD -d LOCALVERSION_AUTO
 
-    # 2. KernelSU & SuSFS configurations (ISO/IEC 25010 & 27001 Hardened Stealth Mode)
+    # 2. KernelSU & SuSFS configurations (Single Source of Truth)
+    local KSU_SUSFS_CONFIGS=(
+        -e KSU
+        -e THREAD_INFO_IN_TASK
+        -e KSU_SUSFS
+        -e KSU_SUSFS_SUS_PATH
+        -e KSU_SUSFS_SUS_MOUNT
+        -e KSU_SUSFS_SUS_KSTAT
+        -e KSU_SUSFS_SPOOF_UNAME
+        -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
+        -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+        -e KSU_SUSFS_OPEN_REDIRECT
+        -e KSU_SUSFS_SUS_MAP
+        -e KSU_SUSFS_SUS_NET
+        -e KSU_SUSFS_SUS_FD
+        -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY
+        -e KSU_SUSFS_FILTER_ENV
+        -e KSU_SUSFS_SPOOF_COMM
+        -e KSU_SUSFS_SUS_SU
+        -e KSU_SUSFS_TRY_UMOUNT
+        -e KSU_SUSFS_ENABLE_LOG
+        -d CFI
+        -d CFI_CLANG
+        -d CFI_CLANG_SHADOW
+        -e CFI_PERMISSIVE
+    )
     if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[*] Injecting KernelSU & SuSFS configurations (Hardened Stealth Mode)..."
-        scripts/config --file "${OUT_DIR}/.config" \
-            -e KSU \
-            -e THREAD_INFO_IN_TASK \
-            -e KSU_SUSFS \
-            -e KSU_SUSFS_SUS_PATH \
-            -e KSU_SUSFS_SUS_MOUNT \
-            -e KSU_SUSFS_SUS_KSTAT \
-            -e KSU_SUSFS_SPOOF_UNAME \
-            -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-            -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-            -e KSU_SUSFS_OPEN_REDIRECT \
-            -e KSU_SUSFS_SUS_MAP \
-            -e KSU_SUSFS_SUS_NET \
-            -e KSU_SUSFS_SUS_FD \
-            -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY \
-            -e KSU_SUSFS_FILTER_ENV \
-            -e KSU_SUSFS_SPOOF_COMM \
-            -e KSU_SUSFS_SUS_SU \
-            -e KSU_SUSFS_TRY_UMOUNT \
-            -e KSU_SUSFS_ENABLE_LOG \
-            -d CFI \
-            -d CFI_CLANG \
-            -d CFI_CLANG_SHADOW \
-            -e CFI_PERMISSIVE
+        scripts/config --file "${OUT_DIR}/.config" "${KSU_SUSFS_CONFIGS[@]}"
     fi
 
     # 2.1 EROFS filesystem configuration (Mandatory for PixelOS Android 14/15/17)
@@ -539,26 +541,7 @@ build_target() {
 
     if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[*] Re-asserting KernelSU & SuSFS configurations post-olddefconfig..."
-        scripts/config --file "${OUT_DIR}/.config" \
-            -e KSU \
-            -e THREAD_INFO_IN_TASK \
-            -e KSU_SUSFS \
-            -e KSU_SUSFS_SUS_PATH \
-            -e KSU_SUSFS_SUS_MOUNT \
-            -e KSU_SUSFS_SUS_KSTAT \
-            -e KSU_SUSFS_SPOOF_UNAME \
-            -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-            -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-            -e KSU_SUSFS_OPEN_REDIRECT \
-            -e KSU_SUSFS_SUS_MAP \
-            -e KSU_SUSFS_SUS_NET \
-            -e KSU_SUSFS_SUS_FD \
-            -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY \
-            -e KSU_SUSFS_FILTER_ENV \
-            -e KSU_SUSFS_SPOOF_COMM \
-            -e KSU_SUSFS_SUS_SU \
-            -e KSU_SUSFS_TRY_UMOUNT \
-            -d KSU_SUSFS_ENABLE_LOG
+        scripts/config --file "${OUT_DIR}/.config" "${KSU_SUSFS_CONFIGS[@]}"
     fi
 
     # ----------------------------------------------------
@@ -594,6 +577,7 @@ build_target() {
             "CONFIG_KSU_SUSFS_SUS_MOUNT=y"
             "CONFIG_KSU_SUSFS_SUS_KSTAT=y"
             "CONFIG_KSU_SUSFS_SUS_MAP=y"
+            "CONFIG_KSU_SUSFS_ENABLE_LOG=y"
         )
     fi
     for cfg in "${REQUIRED_CONFIGS[@]}"; do
