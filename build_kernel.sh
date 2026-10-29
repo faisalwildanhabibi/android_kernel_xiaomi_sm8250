@@ -577,7 +577,18 @@ build_target() {
             "CONFIG_KSU_SUSFS_SUS_PATH=y"
             "CONFIG_KSU_SUSFS_SUS_MOUNT=y"
             "CONFIG_KSU_SUSFS_SUS_KSTAT=y"
+            "CONFIG_KSU_SUSFS_SPOOF_UNAME=y"
+            "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y"
+            "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y"
+            "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y"
             "CONFIG_KSU_SUSFS_SUS_MAP=y"
+            "CONFIG_KSU_SUSFS_SUS_NET=y"
+            "CONFIG_KSU_SUSFS_SUS_FD=y"
+            "CONFIG_KSU_SUSFS_AUTO_SPOOF_SEPOLICY=y"
+            "CONFIG_KSU_SUSFS_FILTER_ENV=y"
+            "CONFIG_KSU_SUSFS_SPOOF_COMM=y"
+            "CONFIG_KSU_SUSFS_SUS_SU=y"
+            "CONFIG_KSU_SUSFS_TRY_UMOUNT=y"
             "CONFIG_KSU_SUSFS_ENABLE_LOG=y"
         )
     fi

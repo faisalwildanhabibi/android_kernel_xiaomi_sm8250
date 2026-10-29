@@ -115,45 +115,6 @@ static inline bool susfs_ends_with(const char *str, const char *suffix) {
 	return !strcmp(str + str_len - suffix_len, suffix);
 }
 
-static inline bool susfs_is_sus_su_path(const char *name) {
-	size_t len;
-
-	if (!name)
-		return false;
-
-	/* Exact match for relative lookups or directory entries */
-	if (!strcmp(name, "su") || !strcmp(name, "daemonsu") || !strcmp(name, "ksud"))
-		return true;
-
-	len = strlen(name);
-
-	/* Any path ending with "/su" (e.g. /any/arbitrary/path/su) */
-	if (len >= 3 && !strcmp(name + len - 3, "/su"))
-		return true;
-
-	/* Any path ending with "/su/" (e.g. directory probe /any/path/su/) */
-	if (len >= 4 && !strcmp(name + len - 4, "/su/"))
-		return true;
-
-	/* Any path ending with "/daemonsu" */
-	if (len >= 9 && !strcmp(name + len - 9, "/daemonsu"))
-		return true;
-
-	/* Any path ending with "/daemonsu/" */
-	if (len >= 10 && !strcmp(name + len - 10, "/daemonsu/"))
-		return true;
-
-	/* Any path ending with "/ksud" */
-	if (len >= 5 && !strcmp(name + len - 5, "/ksud"))
-		return true;
-
-	/* Any path ending with "/ksud/" */
-	if (len >= 6 && !strcmp(name + len - 6, "/ksud/"))
-		return true;
-
-	return false;
-}
-
 /* From KernelSU */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
 typedef const struct qstr *susfs_fname_t;
