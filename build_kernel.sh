@@ -476,7 +476,7 @@ build_target() {
         -e MM_EVENT_STAT \
         -e SLAB_FREELIST_RANDOM \
         -e SLAB_FREELIST_HARDENED \
-        -d FAIR_GROUP_SCHED \
+        -e FAIR_GROUP_SCHED \
         -d SLUB_DEBUG_ON \
         -d PROVE_LOCKING \
         -d LOCKDEP \
@@ -565,6 +565,7 @@ build_target() {
         "CONFIG_FORCE_FAST_CHARGE=y"
         "CONFIG_HZ_300=y"
         "CONFIG_SCHED_CASS=y"
+        "CONFIG_FAIR_GROUP_SCHED=y"
         "CONFIG_CRYPTO_ZSTD=y"
         "CONFIG_RMNET_PERF=y"
         "CONFIG_RMNET_SHS=y"

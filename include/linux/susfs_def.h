@@ -255,11 +255,8 @@ static inline void susfs_clear_current_proc_no_su(void) {
 }
 
 static inline bool susfs_is_current_proc_unprivileged_non_su(void) {
-	if (susfs_is_current_app_uid()) {
-		if (unlikely(susfs_is_current_app_allowed_su()))
-			return false;
-		return true;
-	}
+	if (unlikely(susfs_is_current_app_allowed_su()))
+		return false;
 	return susfs_is_current_proc_umounted_app() ||
 	       susfs_is_current_proc_no_su();
 }
