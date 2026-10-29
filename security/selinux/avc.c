@@ -1105,14 +1105,9 @@ int avc_has_extended_perms(struct selinux_state *state,
 #ifdef CONFIG_KSU_SUSFS
 	if ((susfs_ksu_sid && ssid == susfs_ksu_sid) ||
 	    susfs_is_current_app_allowed_su()) {
-		avd->allowed = 0xffffffff;
-		avd->auditallow = 0;
-		avd->auditdeny = 0xffffffff;
-		avd->flags |= AVD_FLAGS_PERMISSIVE;
 		return 0;
 	}
 #endif
-
 	rcu_read_lock();
 
 	node = avc_lookup(state->avc, ssid, tsid, tclass);
@@ -1206,14 +1201,15 @@ inline int avc_has_perm_noaudit(struct selinux_state *state,
 #ifdef CONFIG_KSU_SUSFS
 	if ((susfs_ksu_sid && ssid == susfs_ksu_sid) ||
 	    susfs_is_current_app_allowed_su()) {
-		avd->allowed = 0xffffffff;
-		avd->auditallow = 0;
-		avd->auditdeny = 0xffffffff;
-		avd->flags |= AVD_FLAGS_PERMISSIVE;
+		if (avd) {
+			avd->allowed = 0xffffffff;
+			avd->auditallow = 0;
+			avd->auditdeny = 0xffffffff;
+			avd->flags = AVD_FLAGS_PERMISSIVE;
+		}
 		return 0;
 	}
 #endif
-
 	rcu_read_lock();
 
 	node = avc_lookup(state->avc, ssid, tsid, tclass);
