@@ -30,6 +30,10 @@
 #include <linux/audit.h>
 #include <linux/ipv6.h>
 #include <net/ipv6.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/cred.h>
+#include <linux/susfs_def.h>
+#endif
 #include "avc.h"
 #include "avc_ss.h"
 #include "classmap.h"
@@ -1098,6 +1102,17 @@ int avc_has_extended_perms(struct selinux_state *state,
 	xp_node = &local_xp_node;
 	BUG_ON(!requested);
 
+#ifdef CONFIG_KSU_SUSFS
+	if ((susfs_ksu_sid && ssid == susfs_ksu_sid) ||
+	    susfs_is_current_app_allowed_su()) {
+		avd->allowed = 0xffffffff;
+		avd->auditallow = 0;
+		avd->auditdeny = 0xffffffff;
+		avd->flags |= AVD_FLAGS_PERMISSIVE;
+		return 0;
+	}
+#endif
+
 	rcu_read_lock();
 
 	node = avc_lookup(state->avc, ssid, tsid, tclass);
@@ -1187,6 +1202,17 @@ inline int avc_has_perm_noaudit(struct selinux_state *state,
 	u32 denied;
 
 	BUG_ON(!requested);
+
+#ifdef CONFIG_KSU_SUSFS
+	if ((susfs_ksu_sid && ssid == susfs_ksu_sid) ||
+	    susfs_is_current_app_allowed_su()) {
+		avd->allowed = 0xffffffff;
+		avd->auditallow = 0;
+		avd->auditdeny = 0xffffffff;
+		avd->flags |= AVD_FLAGS_PERMISSIVE;
+		return 0;
+	}
+#endif
 
 	rcu_read_lock();
 

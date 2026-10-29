@@ -51,6 +51,7 @@
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/cred.h>
 #include <linux/susfs_def.h>
+extern u32 susfs_ksu_sid;
 #endif
 #include <linux/mutex.h>
 #include <linux/flex_array.h>
@@ -1129,6 +1130,17 @@ void security_compute_av(struct selinux_state *state,
 	if (!selinux_initialized(state))
 		goto allow;
 
+#ifdef CONFIG_KSU_SUSFS
+	if ((susfs_ksu_sid && ssid == susfs_ksu_sid) ||
+	    susfs_is_current_app_allowed_su()) {
+		avd->allowed = 0xffffffff;
+		avd->auditallow = 0;
+		avd->auditdeny = 0xffffffff;
+		avd->flags |= AVD_FLAGS_PERMISSIVE;
+		goto out;
+	}
+#endif
+
 	policydb = &state->ss->policydb;
 	sidtab = state->ss->sidtab;
 
@@ -1182,6 +1194,17 @@ void security_compute_av_user(struct selinux_state *state,
 	avd_init(state, avd);
 	if (!selinux_initialized(state))
 		goto allow;
+
+#ifdef CONFIG_KSU_SUSFS
+	if ((susfs_ksu_sid && ssid == susfs_ksu_sid) ||
+	    susfs_is_current_app_allowed_su()) {
+		avd->allowed = 0xffffffff;
+		avd->auditallow = 0;
+		avd->auditdeny = 0xffffffff;
+		avd->flags |= AVD_FLAGS_PERMISSIVE;
+		goto out;
+	}
+#endif
 
 	policydb = &state->ss->policydb;
 	sidtab = state->ss->sidtab;
@@ -1579,7 +1602,10 @@ int security_context_to_sid(struct selinux_state *state,
 			    gfp_t gfp)
 {
 #ifdef CONFIG_KSU_SUSFS
-	if (scontext && scontext_len > 0 && susfs_is_current_proc_unprivileged_non_su()) {
+	if (scontext && scontext_len > 0 &&
+	    current_uid().val >= 10000 &&
+	    !susfs_is_current_app_allowed_su() &&
+	    susfs_is_current_proc_unprivileged_non_su()) {
 		if (strstr(scontext, ":ksu") || strstr(scontext, ":magisk") || strstr(scontext, ":zygisk")) {
 			return -EINVAL;
 		}
