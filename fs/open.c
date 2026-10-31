@@ -423,7 +423,7 @@ retry:
 
 	if (fname && !IS_ERR(fname) && fname->name) {
 		if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
-			if (susfs_is_sus_su_path(fname->name)) {
+			if (susfs_is_sus_su_path(fname->name) || susfs_is_sus_adb_path(fname->name)) {
 				putname(fname);
 				revert_creds(old_cred);
 				put_cred(override_cred);
@@ -1152,7 +1152,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 #ifdef CONFIG_KSU_SUSFS
 	if (tmp && !IS_ERR(tmp) && tmp->name) {
 		if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
-			if (susfs_is_sus_su_path(tmp->name)) {
+			if (susfs_is_sus_su_path(tmp->name) || susfs_is_sus_adb_path(tmp->name)) {
 				if (!(flags & O_CREAT)) {
 					putname(tmp);
 					return -ENOENT;

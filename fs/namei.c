@@ -445,6 +445,11 @@ int inode_permission2(struct vfsmount *mnt, struct inode *inode, int mask)
 {
 	int retval;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (unlikely(susfs_is_inode_sus_path(inode)))
+		return -ENOENT;
+#endif
+
 	retval = sb_permission(inode->i_sb, inode, mask);
 	if (retval)
 		return retval;
@@ -2286,10 +2291,6 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		u64 hash_len;
 		int type;
 
-		err = may_lookup(nd);
-		if (err)
-			return err;
-
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 		{
 			struct dentry *dentry = nd->path.dentry;
@@ -2300,6 +2301,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 			}
 		}
 #endif
+
+		err = may_lookup(nd);
+		if (err)
+			return err;
 
 		hash_len = hash_name(nd->path.dentry, name);
 

@@ -200,7 +200,7 @@ bool susfs_is_inode_sus_path(struct inode *inode)
 	if (susfs_is_current_app_allowed_su()) {
 		return false;
 	}
-	if (!susfs_is_current_proc_umounted_app()) {
+	if (!susfs_is_current_proc_unprivileged_non_su()) {
 		return false;
 	}
 	if (!inode->i_mapping) {

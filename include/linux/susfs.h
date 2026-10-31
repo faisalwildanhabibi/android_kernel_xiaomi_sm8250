@@ -250,6 +250,7 @@ struct st_susfs_version {
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 void susfs_add_sus_path(void __user **user_info);
 void susfs_add_sus_path_loop(void __user **user_info);
+bool susfs_is_inode_sus_path(struct inode *inode);
 #endif
 
 /* sus_mount */

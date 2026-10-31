@@ -36,6 +36,9 @@ extern int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 extern bool susfs_is_inode_sus_kstat(struct inode *inode, bool *out_is_fuse);
 extern void susfs_sus_kstat_spoof_generic_fillattr(struct inode *inode, struct kstat *stat, u32 result_mask);
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+extern bool susfs_is_inode_sus_path(struct inode *inode);
+#endif
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 
 /**
@@ -204,6 +207,10 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 {
 	int retval;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (path->dentry && d_backing_inode(path->dentry) && unlikely(susfs_is_inode_sus_path(d_backing_inode(path->dentry))))
+		return -ENOENT;
+#endif
 	retval = security_inode_getattr(path);
 	if (retval)
 		return retval;
@@ -296,7 +303,7 @@ retry:
 
 	if (fname && !IS_ERR(fname) && fname->name) {
 		if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
-			if (susfs_is_sus_su_path(fname->name)) {
+			if (susfs_is_sus_su_path(fname->name) || susfs_is_sus_adb_path(fname->name)) {
 				putname(fname);
 				return -ENOENT;
 			}
@@ -531,7 +538,7 @@ static int do_readlinkat(int dfd, const char __user *pathname,
 	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
 		struct filename *tmp_name = getname(pathname);
 		if (!IS_ERR(tmp_name)) {
-			if (tmp_name->name && susfs_is_sus_su_path(tmp_name->name)) {
+			if (tmp_name->name && (susfs_is_sus_su_path(tmp_name->name) || susfs_is_sus_adb_path(tmp_name->name))) {
 				putname(tmp_name);
 				return -ENOENT;
 			}

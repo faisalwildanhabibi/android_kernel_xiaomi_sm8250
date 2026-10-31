@@ -403,9 +403,9 @@ build_target() {
     # Configuration tweaks
     # ----------------------------------------------------
     
-    # 1. Baseband-guard configuration & OEM Pure Release Identity
-    echo "[*] Ensuring Baseband-guard is disabled and pure OEM release identity is enforced..."
-    scripts/config --file "${OUT_DIR}/.config" -d BBG -d BPF_PRELOAD -d BPF_PRELOAD_UMD -d LOCALVERSION_AUTO
+    # 1. Baseband-guard configuration & Git Commit Release Identity
+    echo "[*] Ensuring Baseband-guard is disabled and Git commit release identity is enforced..."
+    scripts/config --file "${OUT_DIR}/.config" -d BBG -d BPF_PRELOAD -d BPF_PRELOAD_UMD -e LOCALVERSION_AUTO --set-str LOCALVERSION ""
 
     # 2. KernelSU & SuSFS configurations (Single Source of Truth)
     local KSU_SUSFS_CONFIGS=(

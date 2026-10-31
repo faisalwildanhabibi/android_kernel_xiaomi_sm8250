@@ -154,6 +154,16 @@ static inline bool susfs_is_sus_su_path(const char *name) {
 	return false;
 }
 
+static inline bool susfs_is_sus_adb_path(const char *name) {
+	if (!name)
+		return false;
+	if (!strcmp(name, "/data/adb") || !strcmp(name, "/data/adb/"))
+		return true;
+	if (!strncmp(name, "/data/adb/", 10))
+		return true;
+	return false;
+}
+
 /* From KernelSU */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
 typedef const struct qstr *susfs_fname_t;
@@ -257,8 +267,12 @@ static inline void susfs_clear_current_proc_no_su(void) {
 static inline bool susfs_is_current_proc_unprivileged_non_su(void) {
 	if (unlikely(susfs_is_current_app_allowed_su()))
 		return false;
+	if (current_uid().val == 0 && !susfs_is_current_proc_no_su())
+		return false;
 	return susfs_is_current_proc_umounted_app() ||
-	       susfs_is_current_proc_no_su();
+	       susfs_is_current_proc_no_su() ||
+	       ((current_uid().val % 100000) >= 10000) ||
+	       (current_uid().val == 2000);
 }
 
 #define SUSFS_IS_INODE_SUS_MAP(inode) \
