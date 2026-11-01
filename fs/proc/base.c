@@ -1963,6 +1963,21 @@ static int do_proc_readlink(struct path *path, char __user *buffer, int buflen)
 	len = PTR_ERR(pathname);
 	if (IS_ERR(pathname))
 		goto out;
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(susfs_is_current_proc_unprivileged_non_su())) {
+		if (susfs_is_sus_su_path(pathname)) {
+			len = -ENOENT;
+			goto out;
+		}
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		if (path->dentry && d_backing_inode(path->dentry) &&
+		    susfs_is_inode_sus_path(d_backing_inode(path->dentry))) {
+			len = -ENOENT;
+			goto out;
+		}
+#endif
+	}
+#endif
 	len = tmp + PAGE_SIZE - 1 - pathname;
 
 	if (len > buflen)

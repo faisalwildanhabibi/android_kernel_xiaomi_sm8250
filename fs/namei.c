@@ -40,7 +40,7 @@
 #include <linux/init_task.h>
 #include <linux/uaccess.h>
 #include <linux/build_bug.h>
-#if defined(CONFIG_KSU_SUSFS_SUS_PATH) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#if defined(CONFIG_KSU_SUSFS)
 #include <linux/susfs_def.h>
 #endif
 
@@ -5129,6 +5129,11 @@ int vfs_readlink(struct dentry *dentry, char __user *buffer, int buflen)
 	const char *link;
 	int res;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (inode && unlikely(susfs_is_inode_sus_path(inode)))
+		return -ENOENT;
+#endif
+
 	if (unlikely(!(inode->i_opflags & IOP_DEFAULT_READLINK))) {
 		if (unlikely(inode->i_op->readlink))
 #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
@@ -5164,6 +5169,14 @@ int vfs_readlink(struct dentry *dentry, char __user *buffer, int buflen)
 		if (!res) {
 			do_delayed_call(&done);
 			return res;
+		}
+	}
+#endif
+#ifdef CONFIG_KSU_SUSFS
+	if (link && !IS_ERR(link) && unlikely(susfs_is_current_proc_unprivileged_non_su())) {
+		if (susfs_is_sus_su_path(link)) {
+			do_delayed_call(&done);
+			return -ENOENT;
 		}
 	}
 #endif

@@ -36,10 +36,11 @@ extern int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 extern bool susfs_is_inode_sus_kstat(struct inode *inode, bool *out_is_fuse);
 extern void susfs_sus_kstat_spoof_generic_fillattr(struct inode *inode, struct kstat *stat, u32 result_mask);
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 extern bool susfs_is_inode_sus_path(struct inode *inode);
 #endif
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 
 /**
  * generic_fillattr - Fill in the basic attributes from the inode struct
@@ -553,6 +554,13 @@ retry:
 		struct inode *inode = d_backing_inode(path.dentry);
 
 		error = empty ? -ENOENT : -EINVAL;
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		if (path.dentry && d_backing_inode(path.dentry) &&
+		    unlikely(susfs_is_inode_sus_path(d_backing_inode(path.dentry)))) {
+			path_put(&path);
+			return -ENOENT;
+		}
+#endif
 		/*
 		 * AFS mountpoints allow readlink(2) but are not symlinks
 		 */
