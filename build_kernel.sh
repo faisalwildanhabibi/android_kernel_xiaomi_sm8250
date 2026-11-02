@@ -76,17 +76,28 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
 
     # 1. Apply SuSFS 4.19 Kernel Patch
     if [ ! -f "fs/susfs.c" ]; then
-        echo "[*] Applying SuSFS 4.19 Kernel Patch..."
-        if [ -f "patches/susfs_v2.3.0.patch" ]; then
-            patch -p1 --forward < patches/susfs_v2.3.0.patch
-        elif [ -f "patches/susfs_patch_to_4.19.patch" ]; then
-            patch -p1 --forward < patches/susfs_patch_to_4.19.patch
+        echo "[*] Initializing SuSFS 4.19 Kernel Patch..."
+        mkdir -p patches
+        SUSFS_PATCH_FILE="patches/susfs_patch_to_4.19.patch"
+        SUSFS_PATCH_URL="https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/mainline/Patches/Patch/susfs_patch_to_4.19.patch"
+
+        TMP_PATCH=$(mktemp)
+        echo "[*] Attempting to download latest SuSFS patch from upstream..."
+        if curl -LSs --connect-timeout 10 --max-time 30 -o "$TMP_PATCH" "$SUSFS_PATCH_URL" && [ -s "$TMP_PATCH" ]; then
+            echo "[+] Successfully downloaded SuSFS patch from upstream. Updating local patch file..."
+            mv "$TMP_PATCH" "$SUSFS_PATCH_FILE"
         else
-            echo "[*] Downloading SuSFS patch from upstream..."
-            curl -LSs -o /tmp/susfs.patch "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/mainline/Patches/Patch/susfs_patch_to_4.19.patch"
-            patch -p1 --forward < /tmp/susfs.patch || true
-            rm -f /tmp/susfs.patch
+            echo "[-] Failed to download SuSFS patch from upstream. Checking for local fallback patch..."
+            rm -f "$TMP_PATCH"
+            if [ ! -f "$SUSFS_PATCH_FILE" ]; then
+                echo "[!] Error: Remote download failed and local fallback patch ($SUSFS_PATCH_FILE) not found!"
+                exit 1
+            fi
+            echo "[*] Using existing local fallback patch: ${SUSFS_PATCH_FILE}"
         fi
+
+        echo "[*] Applying SuSFS patch (${SUSFS_PATCH_FILE})..."
+        patch -p1 --forward < "$SUSFS_PATCH_FILE"
         echo "[+] SuSFS kernel patch applied successfully."
     else
         echo "[*] SuSFS kernel code already present."
