@@ -151,28 +151,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "[*] Injecting BakaSU & SuSFS configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
-        -e THREAD_INFO_IN_TASK \
-        -e KSU_SUSFS \
-        -e KSU_SUSFS_SUS_PATH \
-        -e KSU_SUSFS_SUS_MOUNT \
-        -e KSU_SUSFS_SUS_KSTAT \
-        -e KSU_SUSFS_SPOOF_UNAME \
-        -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-        -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-        -e KSU_SUSFS_OPEN_REDIRECT \
-        -e KSU_SUSFS_SUS_MAP \
-        -e KSU_SUSFS_SUS_NET \
-        -e KSU_SUSFS_SUS_FD \
-        -e KSU_SUSFS_AUTO_SPOOF_SEPOLICY \
-        -e KSU_SUSFS_FILTER_ENV \
-        -e KSU_SUSFS_SPOOF_COMM \
-        -e KSU_SUSFS_SUS_SU \
-        -e KSU_SUSFS_TRY_UMOUNT \
-        -e KSU_SUSFS_ENABLE_LOG \
-        -d CFI \
-        -d CFI_CLANG \
-        -d CFI_CLANG_SHADOW \
-        -e CFI_PERMISSIVE
+        -e KSU_SUSFS
 
     make "${MAKE_OPTS[@]}" olddefconfig
 fi
