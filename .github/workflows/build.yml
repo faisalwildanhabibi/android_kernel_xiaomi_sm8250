@@ -114,7 +114,7 @@ jobs:
     - name: "Upload Flashable ZIP & Checksums"
       uses: actions/upload-artifact@v4
       with:
-        name: Kernel-${{ github.event.inputs.device || 'alioth' }}-BakaSU-SuSFS-${{ github.run_id }}
+        name: Kernel-${{ github.event.inputs.device || 'alioth' }}-BakaSU-SuSFS-NoMount-${{ github.run_id }}
         path: |
           Kernel-*.zip
           SHA256SUMS

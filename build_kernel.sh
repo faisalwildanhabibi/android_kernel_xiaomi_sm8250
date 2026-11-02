@@ -67,14 +67,32 @@ echo "[*] Checking Clang version..."
 clang --version || { echo "[!] Clang not found at ${TOOLCHAIN_BIN}. Please check the path."; exit 1; }
 
 # ==========================================
-# BakaSU & SuSFS Setup
+# BakaSU, SuSFS & NoMount Setup
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "==========================================="
-    echo " [*] Initializing BakaSU & SuSFS Setup"
+    echo " [*] Initializing BakaSU, SuSFS & NoMount Setup"
     echo "==========================================="
 
-    # 1. Apply SuSFS 4.19 Kernel Patch
+    # 1. Setup BakaSU
+    echo "[*] Downloading BakaSU setup script..."
+    KSU_SETUP_TMP=$(mktemp)
+    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+        echo "[+] BakaSU script retrieved successfully."
+        bash "$KSU_SETUP_TMP" main
+        rm -f "$KSU_SETUP_TMP"
+
+        # Compatibility adjustments for SuSFS
+        if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
+            sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
+        fi
+    else
+        echo "[-] Failed to retrieve valid BakaSU setup script!"
+        rm -f "$KSU_SETUP_TMP"
+        exit 1
+    fi
+
+    # 2. Apply SuSFS 4.19 Kernel Patch
     if [ ! -f "fs/susfs.c" ]; then
         echo "[*] Initializing SuSFS 4.19 Kernel Patch..."
         mkdir -p patches
@@ -114,24 +132,24 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[*] SuSFS kernel code already present."
     fi
 
-    # 2. Setup BakaSU
-    echo "[*] Downloading BakaSU setup script..."
-    KSU_SETUP_TMP=$(mktemp)
-    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
-        echo "[+] BakaSU script retrieved successfully."
-        bash "$KSU_SETUP_TMP" main
-        rm -f "$KSU_SETUP_TMP"
-
-        # Compatibility adjustments for SuSFS
-        if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
-            sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
+    # 3. Setup NoMount
+    if [ ! -d "NoMount" ]; then
+        echo "[*] Downloading NoMount setup script..."
+        NOMOUNT_SETUP_TMP=$(mktemp)
+        if curl -LSs -o "$NOMOUNT_SETUP_TMP" "https://raw.githubusercontent.com/maxsteeel/nomount/master/kernel/setup.sh" && [ -s "$NOMOUNT_SETUP_TMP" ]; then
+            echo "[+] NoMount script retrieved successfully."
+            sh "$NOMOUNT_SETUP_TMP"
+            rm -f "$NOMOUNT_SETUP_TMP"
+        else
+            echo "[-] Failed to retrieve valid NoMount setup script!"
+            rm -f "$NOMOUNT_SETUP_TMP"
+            exit 1
         fi
     else
-        echo "[-] Failed to retrieve valid BakaSU setup script!"
-        rm -f "$KSU_SETUP_TMP"
-        exit 1
+        echo "[*] NoMount code already present."
     fi
-    echo "[+] BakaSU & SuSFS setup finished."
+
+    echo "[+] BakaSU, SuSFS & NoMount setup finished."
 fi
 
 # ==========================================
@@ -167,13 +185,14 @@ else
 fi
 
 # ==========================================
-# BakaSU & SuSFS Kernel Configurations
+# BakaSU, SuSFS & NoMount Kernel Configurations
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    echo "[*] Injecting BakaSU & SuSFS configurations..."
+    echo "[*] Injecting BakaSU, SuSFS & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
-        -e KSU_SUSFS
+        -e KSU_SUSFS \
+        -e NOMOUNT
 
     make "${MAKE_OPTS[@]}" olddefconfig
 fi
@@ -248,7 +267,7 @@ sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
 KSU_TAG="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    KSU_TAG="BakaSU-SuSFS"
+    KSU_TAG="BakaSU-SuSFS-NoMount"
 fi
 
 ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"
