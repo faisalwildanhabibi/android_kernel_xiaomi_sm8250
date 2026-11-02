@@ -1,0 +1,121 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: 'Target Device Code'
+        required: false
+        default: 'alioth'
+      ksu:
+        description: 'Enable KernelSU (true/false)'
+        required: false
+        default: 'true'
+      target_os:
+        description: 'Target OS (aosp)'
+        required: false
+        default: 'aosp'
+  push:
+    branches:
+      - 'seventeen-bakasu-susfs'
+    paths:
+      - 'build_kernel.sh'
+      - 'patches/**'
+      - 'arch/arm64/configs/**'
+      - 'fs/**'
+      - 'include/**'
+      - 'kernel/**'
+      - 'drivers/**'
+      - 'net/**'
+      - 'security/**'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build-kernel:
+    name: "Build Kernel (alioth)"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: "Checkout Repository"
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
+    - name: "Set up Build Dependencies"
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          bc bison build-essential ccache curl flex gawk git gnupg \
+          libelf-dev libncurses-dev libssl-dev lzop patch python3 rsync zip zlib1g-dev
+
+    - name: "Cache ccache"
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ccache_mikernel
+        key: ${{ runner.os }}-kernel-ccache-alioth-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-kernel-ccache-alioth-
+          ${{ runner.os }}-kernel-ccache-
+
+    - name: "Cache zyc-clang 16 Toolchain"
+      id: cache-clang
+      uses: actions/cache@v4
+      with:
+        path: ~/zyc-clang
+        key: zyc-clang-16.0.6-20260807
+
+    - name: "Setup zyc-clang 16 Toolchain"
+      if: steps.cache-clang.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p $HOME/zyc-clang
+        cd $HOME/zyc-clang
+        wget -q https://github.com/ZyCromerZ/Clang/releases/download/16.0.6-20260807-release/Clang-16.0.6-20260807.tar.gz
+        tar -zxf Clang-16.0.6-20260807.tar.gz
+        rm -f Clang-16.0.6-20260807.tar.gz
+
+    - name: "Configure ccache"
+      run: |
+        ccache -M 5G
+        ccache -z
+
+    - name: "Run Build Script"
+      run: |
+        sed -i 's/\r$//' build_kernel.sh
+        chmod +x build_kernel.sh
+
+        DEV="${{ github.event.inputs.device }}"
+        [ -z "$DEV" ] && DEV="alioth"
+
+        KSU_FLAG="${{ github.event.inputs.ksu }}"
+        [ -z "$KSU_FLAG" ] && KSU_FLAG="true"
+
+        OS_FLAG="${{ github.event.inputs.target_os }}"
+        [ -z "$OS_FLAG" ] && OS_FLAG="aosp"
+
+        ARGS="$DEV"
+        if [ "$KSU_FLAG" = "true" ]; then
+          ARGS="$ARGS ksu"
+        fi
+        ARGS="$ARGS $OS_FLAG"
+
+        echo "Executing: ./build_kernel.sh $ARGS"
+        ./build_kernel.sh $ARGS
+
+    - name: "Generate Cryptographic Checksum"
+      run: |
+        sha256sum Kernel-*.zip > SHA256SUMS
+        echo "### Cryptographic Release Integrity" >> $GITHUB_STEP_SUMMARY
+        echo "| Artifact | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+        echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+        while read -r sum file; do
+          echo "| \`$file\` | \`$sum\` |" >> $GITHUB_STEP_SUMMARY
+        done < SHA256SUMS
+
+    - name: "Upload Flashable ZIP & Checksums"
+      uses: actions/upload-artifact@v4
+      with:
+        name: Kernel-${{ github.event.inputs.device || 'alioth' }}-BakaSU-SuSFS-${{ github.run_id }}
+        path: |
+          Kernel-*.zip
+          SHA256SUMS
+        compression-level: 0
