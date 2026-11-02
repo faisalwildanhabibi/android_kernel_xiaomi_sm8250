@@ -180,7 +180,7 @@ fi
 echo "==========================================="
 echo " [*] Starting Kernel Compilation"
 echo "==========================================="
-make "${MAKE_OPTS[@]}" Image dtbo.img
+make "${MAKE_OPTS[@]}" Image
 
 if [ ! -f "${OUT_DIR}/arch/arm64/boot/Image" ]; then
     echo "[-] Kernel compilation failed: Image not found!"
@@ -198,10 +198,7 @@ ANYKERNEL_DIR="anykernel"
 rm -rf "${ANYKERNEL_DIR}"
 git clone https://github.com/AstideLabs/AnyKernel3 -b kona --single-branch --depth=1 "${ANYKERNEL_DIR}"
 
-cp "${OUT_DIR}/arch/arm64/boot/Image" "${ANYKERNEL_DIR}/"
-if [ -f "${OUT_DIR}/arch/arm64/boot/dtbo.img" ]; then
-    cp "${OUT_DIR}/arch/arm64/boot/dtbo.img" "${ANYKERNEL_DIR}/"
-fi
+cp "${OUT_DIR}/arch/arm64/boot/Image" "${ANYKERNEL_DIR}/Image"
 
 cd "${ANYKERNEL_DIR}"
 sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
