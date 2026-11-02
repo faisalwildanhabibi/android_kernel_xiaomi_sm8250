@@ -82,18 +82,29 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         SUSFS_PATCH_URL="https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/mainline/Patches/Patch/susfs_patch_to_4.19.patch"
 
         TMP_PATCH=$(mktemp)
+        REMOTE_VALID=0
         echo "[*] Attempting to download latest SuSFS patch from upstream..."
         if curl -LSs --connect-timeout 10 --max-time 30 -o "$TMP_PATCH" "$SUSFS_PATCH_URL" && [ -s "$TMP_PATCH" ]; then
-            echo "[+] Successfully downloaded SuSFS patch from upstream. Updating local patch file..."
-            mv "$TMP_PATCH" "$SUSFS_PATCH_FILE"
+            echo "[*] Validating downloaded upstream patch compatibility via dry-run..."
+            if patch -p1 --forward --dry-run < "$TMP_PATCH" > /dev/null 2>&1; then
+                echo "[+] Upstream patch validated successfully. Updating local patch file..."
+                mv "$TMP_PATCH" "$SUSFS_PATCH_FILE"
+                REMOTE_VALID=1
+            else
+                echo "[-] Downloaded upstream patch failed dry-run compatibility checks on this kernel tree."
+                rm -f "$TMP_PATCH"
+            fi
         else
-            echo "[-] Failed to download SuSFS patch from upstream. Checking for local fallback patch..."
+            echo "[-] Failed to download SuSFS patch from upstream."
             rm -f "$TMP_PATCH"
+        fi
+
+        if [ "$REMOTE_VALID" -eq 0 ]; then
             if [ ! -f "$SUSFS_PATCH_FILE" ]; then
-                echo "[!] Error: Remote download failed and local fallback patch ($SUSFS_PATCH_FILE) not found!"
+                echo "[!] Error: Neither remote patch nor local fallback patch ($SUSFS_PATCH_FILE) is available!"
                 exit 1
             fi
-            echo "[*] Using existing local fallback patch: ${SUSFS_PATCH_FILE}"
+            echo "[*] Falling back to verified local patch: ${SUSFS_PATCH_FILE}"
         fi
 
         echo "[*] Applying SuSFS patch (${SUSFS_PATCH_FILE})..."
