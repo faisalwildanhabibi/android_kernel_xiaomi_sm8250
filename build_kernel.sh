@@ -149,7 +149,23 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[*] NoMount code already present."
     fi
 
-    echo "[+] BakaSU, SuSFS & NoMount setup finished."
+    # 4. Verify WireGuard Driver
+    if [ -d "drivers/net/wireguard" ]; then
+        echo "[+] Native in-tree WireGuard driver present in drivers/net/wireguard."
+    else
+        echo "[*] In-tree WireGuard driver missing, fetching wireguard-linux-compat..."
+        WG_TMP=$(mktemp -d)
+        if git clone https://github.com/WireGuard/wireguard-linux-compat.git --depth=1 "$WG_TMP"; then
+            echo "[+] Copying WireGuard source to drivers/net/wireguard..."
+            cp -r "$WG_TMP/src" "drivers/net/wireguard"
+            echo "[+] WireGuard driver populated successfully."
+        else
+            echo "[-] Failed to clone WireGuard repository!"
+        fi
+        rm -rf "$WG_TMP"
+    fi
+
+    echo "[+] BakaSU, SuSFS, NoMount & WireGuard setup finished."
 fi
 
 # ==========================================
@@ -185,17 +201,46 @@ else
 fi
 
 # ==========================================
-# BakaSU, SuSFS & NoMount Kernel Configurations
+# Feature, Performance & Stealth Configurations
 # ==========================================
+echo "[*] Injecting WireGuard, Networking, Performance & Stealth configurations..."
+scripts/config --file "${OUT_DIR}/.config" \
+    -e WIREGUARD \
+    -d WIREGUARD_DEBUG \
+    -e TUN \
+    -e IP_ADVANCED_ROUTER \
+    -e IP_MULTIPLE_TABLES \
+    -e IPV6_MULTIPLE_TABLES \
+    -e NETFILTER_ADVANCED \
+    -e NETFILTER_XT_MATCH_POLICY \
+    -e NETFILTER_XT_MATCH_MARK \
+    -e NETFILTER_XT_TARGET_MARK \
+    -e TCP_CONG_ADVANCED \
+    -e TCP_CONG_BBR \
+    -e DEFAULT_BBR \
+    --set-str DEFAULT_TCP_CONG "bbr" \
+    -e ZRAM \
+    -e ZRAM_WRITEBACK \
+    -e CRYPTO_LZ4 \
+    -e CRYPTO_LZ4HC \
+    -e CRYPTO_ZSTD \
+    -e ZSMALLOC \
+    -e MQ_IOSCHED_DEADLINE \
+    -e MQ_IOSCHED_KYBER \
+    -e CPU_FREQ_GOV_SCHEDUTIL \
+    -e SCHED_WALT \
+    -e PREEMPT \
+    -d SECURITY_SELINUX_DEVELOP
+
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "[*] Injecting BakaSU, SuSFS & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
         -e KSU_SUSFS \
         -e NOMOUNT
-
-    make "${MAKE_OPTS[@]}" olddefconfig
 fi
+
+make "${MAKE_OPTS[@]}" olddefconfig
 
 echo "==========================================="
 echo " [*] Starting Kernel Compilation"
@@ -267,7 +312,7 @@ sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
 KSU_TAG="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    KSU_TAG="BakaSU-SuSFS-NoMount"
+    KSU_TAG="BakaSU-SuSFS-NoMount-WG"
 fi
 
 ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"
