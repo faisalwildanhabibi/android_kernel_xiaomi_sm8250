@@ -222,7 +222,6 @@ scripts/config --file "${OUT_DIR}/.config" \
     -e ZRAM \
     -e ZRAM_WRITEBACK \
     -e CRYPTO_LZ4 \
-    -e CRYPTO_LZ4HC \
     -e CRYPTO_ZSTD \
     -e ZSMALLOC \
     -e MQ_IOSCHED_DEADLINE \
