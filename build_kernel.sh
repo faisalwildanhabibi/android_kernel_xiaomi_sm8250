@@ -138,7 +138,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         NOMOUNT_SETUP_TMP=$(mktemp)
         if curl -LSs -o "$NOMOUNT_SETUP_TMP" "https://raw.githubusercontent.com/maxsteeel/nomount/master/kernel/setup.sh" && [ -s "$NOMOUNT_SETUP_TMP" ]; then
             echo "[+] NoMount script retrieved successfully."
-            sh "$NOMOUNT_SETUP_TMP"
+            sh "$NOMOUNT_SETUP_TMP" master
             rm -f "$NOMOUNT_SETUP_TMP"
         else
             echo "[-] Failed to retrieve valid NoMount setup script!"
