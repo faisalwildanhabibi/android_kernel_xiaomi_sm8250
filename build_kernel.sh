@@ -203,32 +203,15 @@ fi
 # ==========================================
 # Feature, Performance & Stealth Configurations
 # ==========================================
-echo "[*] Injecting WireGuard, Networking, Performance & Stealth configurations..."
+echo "[*] Injecting Performance & Stealth configurations..."
 scripts/config --file "${OUT_DIR}/.config" \
-    -e WIREGUARD \
-    -d WIREGUARD_DEBUG \
-    -e TUN \
-    -e IP_ADVANCED_ROUTER \
-    -e IP_MULTIPLE_TABLES \
-    -e IPV6_MULTIPLE_TABLES \
-    -e NETFILTER_ADVANCED \
-    -e NETFILTER_XT_MATCH_POLICY \
-    -e NETFILTER_XT_MATCH_MARK \
-    -e NETFILTER_XT_TARGET_MARK \
     -e TCP_CONG_ADVANCED \
     -e TCP_CONG_BBR \
     -e DEFAULT_BBR \
     --set-str DEFAULT_TCP_CONG "bbr" \
-    -e ZRAM \
     -e ZRAM_WRITEBACK \
-    -e CRYPTO_LZ4 \
-    -e CRYPTO_ZSTD \
-    -e ZSMALLOC \
     -e MQ_IOSCHED_DEADLINE \
     -e MQ_IOSCHED_KYBER \
-    -e CPU_FREQ_GOV_SCHEDUTIL \
-    -e SCHED_WALT \
-    -e PREEMPT \
     -d SECURITY_SELINUX_DEVELOP
 
 if [ "$ENABLE_KSU" -eq 1 ]; then
