@@ -21,6 +21,14 @@ menu "Xiaomi board selection"
 		help
 		  Support for Redmi K40 / POCO F3 / Mi 11X
 
+	config K11A_PANEL_90HZ
+		bool "Add a 90 Hz mode to the k11a 38 08 0a panel"
+		depends on MACH_XIAOMI_ALIOTH
+		help
+		  Adds a third display mode next to 60 and 120 Hz. It uses the
+		  panel's 120 Hz scan with a slower divider, as in Xiaomi's
+		  devicetree for this panel.
+
 	config MACH_XIAOMI_APOLLO
 		bool "Xiaomi apollo board"
 		select MACH_XIAOMI_SM8250
