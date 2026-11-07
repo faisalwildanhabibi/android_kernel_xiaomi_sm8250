@@ -568,6 +568,16 @@ config MEM_SOFT_DIRTY
 
 	  See Documentation/admin-guide/mm/soft-dirty.rst for more details.
 
+config KCOMPRESSD
+	bool "Offload swap compression from kswapd to kcompressd"
+	depends on SWAP
+	default y
+	help
+	  kswapd queues anon pages bound for a synchronous swap device, such
+	  as zram, to a per-node kcompressd thread, so compression doesn't
+	  slow down reclaim. vm.kcompressd sets the queue depth; 0 turns the
+	  offload off at runtime.
+
 config ZSWAP
 	bool "Compressed cache for swap pages (EXPERIMENTAL)"
 	depends on FRONTSWAP && CRYPTO=y

@@ -398,6 +398,11 @@ int add_swap_extent(struct swap_info_struct *sis, unsigned long start_page,
 int generic_swapfile_activate(struct swap_info_struct *, struct file *,
 		sector_t *);
 
+#ifdef CONFIG_KCOMPRESSD
+extern int vm_kcompressd;
+int kcompressd(void *p);
+#endif
+
 /* linux/mm/swap_state.c */
 /* One swap address space for each 64M swap space */
 #define SWAP_ADDRESS_SPACE_SHIFT	14

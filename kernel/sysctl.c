@@ -129,6 +129,9 @@ static int __maybe_unused neg_three = -3;
 
 static int zero;
 static int __maybe_unused one = 1;
+#ifdef CONFIG_KCOMPRESSD
+static int kcompressd_fifo_max = KCOMPRESS_FIFO_SIZE;
+#endif
 static int __maybe_unused two = 2;
 static int __maybe_unused three = 3;
 static int __maybe_unused four = 4;
@@ -1805,6 +1808,17 @@ static struct ctl_table vm_table[] = {
 		.extra1		= &zero,
 		.extra2		= &one_hundred,
 	},
+#ifdef CONFIG_KCOMPRESSD
+	{
+		.procname	= "kcompressd",
+		.data		= &vm_kcompressd,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &zero,
+		.extra2		= &kcompressd_fifo_max,
+	},
+#endif
 	{
 		.procname       = "want_old_faultaround_pte",
 		.data           = &want_old_faultaround_pte,

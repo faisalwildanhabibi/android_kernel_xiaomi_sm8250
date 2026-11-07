@@ -104,6 +104,7 @@ struct free_area {
 };
 
 struct pglist_data;
+struct kfifo;
 
 /*
  * zone->lock and the zone lru_lock are two of the hottest locks in the kernel.
@@ -696,6 +697,15 @@ typedef struct pglist_data {
 	enum zone_type kswapd_classzone_idx;
 
 	int kswapd_failures;		/* Number of 'reclaimed == 0' runs */
+
+#ifdef CONFIG_KCOMPRESSD
+#define KCOMPRESS_FIFO_SIZE 256
+	/* Anon pages kswapd handed off for compression into zram */
+	wait_queue_head_t kcompressd_wait;
+	struct task_struct *kcompressd;
+	struct kfifo *kcompress_fifo;
+	spinlock_t kcompress_fifo_lock;
+#endif
 
 #ifdef CONFIG_COMPACTION
 	int kcompactd_max_order;
