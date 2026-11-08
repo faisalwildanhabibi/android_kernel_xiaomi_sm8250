@@ -540,7 +540,7 @@ ssize_t utf8len(const struct utf8data *data, const char *s)
 			return -1;
 		if (utf8agetab[LEAF_GEN(leaf)] > data->maxage)
 			ret += utf8clen(s);
-		else if (LEAF_CCC(leaf) == DECOMPOSE)
+		else if (LEAF_CCC(leaf) == DECOMPOSE && *LEAF_STR(leaf))
 			ret += strlen(LEAF_STR(leaf));
 		else
 			ret += utf8clen(s);
@@ -568,7 +568,7 @@ ssize_t utf8nlen(const struct utf8data *data, const char *s, size_t len)
 			return -1;
 		if (utf8agetab[LEAF_GEN(leaf)] > data->maxage)
 			ret += utf8clen(s);
-		else if (LEAF_CCC(leaf) == DECOMPOSE)
+		else if (LEAF_CCC(leaf) == DECOMPOSE && *LEAF_STR(leaf))
 			ret += strlen(LEAF_STR(leaf));
 		else
 			ret += utf8clen(s);
@@ -701,17 +701,22 @@ int utf8byte(struct utf8cursor *u8c)
 		/* Characters that are too new have CCC 0. */
 		if (utf8agetab[LEAF_GEN(leaf)] > u8c->data->maxage) {
 			ccc = STOPPER;
+		} else if (ccc == DECOMPOSE && *LEAF_STR(leaf) == '\0') {
+			/*
+			 * Ignorable code points (zero-width space, joiners,
+			 * BOM, ...) have an empty decomposition.  Dropping
+			 * them made names that differ only by invisible
+			 * characters compare equal, which lets crafted paths
+			 * alias hidden ones on casefolded directories.  Keep
+			 * them as-is and treat them as CCC 0, as upstream did
+			 * in "unicode: Don't special case ignorable code
+			 * points".
+			 */
+			ccc = STOPPER;
 		} else if (ccc == DECOMPOSE) {
 			u8c->len -= utf8clen(u8c->s);
 			u8c->p = u8c->s + utf8clen(u8c->s);
 			u8c->s = LEAF_STR(leaf);
-			/* Empty decomposition implies CCC 0. */
-			if (*u8c->s == '\0') {
-				if (u8c->ccc == STOPPER)
-					continue;
-				ccc = STOPPER;
-				goto ccc_mismatch;
-			}
 
 			leaf = utf8lookup(u8c->data, u8c->hangul, u8c->s);
 			if (!leaf)
