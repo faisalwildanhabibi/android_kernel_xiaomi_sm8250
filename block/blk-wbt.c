@@ -132,6 +132,15 @@ static void wbt_rqw_done(struct rq_wb *rwb, struct rq_wait *rqw,
 	inflight = atomic_dec_return(&rqw->inflight);
 
 	/*
+	 * If inflight dropped below zero due to race condition, reset it to 0
+	 * to prevent underflow from freezing waiters.
+	 */
+	if (unlikely(inflight < 0)) {
+		atomic_set(&rqw->inflight, 0);
+		inflight = 0;
+	}
+
+	/*
 	 * wbt got disabled with IO in flight. Wake up any potential
 	 * waiters, we don't have to do more than that.
 	 */
@@ -161,7 +170,7 @@ static void wbt_rqw_done(struct rq_wb *rwb, struct rq_wait *rqw,
 	if (wq_has_sleeper(&rqw->wait)) {
 		int diff = limit - inflight;
 
-		if (!inflight || diff >= rwb->wb_background / 2)
+		if (inflight <= 0 || diff >= rwb->wb_background / 2)
 			wake_up_all(&rqw->wait);
 	}
 }
@@ -701,7 +710,7 @@ void wbt_set_write_cache(struct request_queue *q, bool write_cache_on)
 /*
  * Enable wbt if defaults are configured that way
  */
-void wbt_enable_default(struct request_queue *q)
+static bool __wbt_enable_default(struct request_queue *q)
 {
 	struct rq_qos *rqos = wbt_rq_qos(q);
 
@@ -709,18 +718,32 @@ void wbt_enable_default(struct request_queue *q)
 	if (rqos) {
 		if (RQWB(rqos)->enable_state == WBT_STATE_OFF_DEFAULT)
 			RQWB(rqos)->enable_state = WBT_STATE_ON_DEFAULT;
-		return;
+		return false;
 	}
 
 	/* Queue not registered? Maybe shutting down... */
 	if (!blk_queue_registered(q))
-		return;
+		return false;
 
 	if ((q->mq_ops && IS_ENABLED(CONFIG_BLK_WBT_MQ)) ||
 	    (q->request_fn && IS_ENABLED(CONFIG_BLK_WBT_SQ)))
-		wbt_init(q);
+		return true;
+
+	return false;
+}
+
+void wbt_enable_default(struct request_queue *q)
+{
+	__wbt_enable_default(q);
 }
 EXPORT_SYMBOL_GPL(wbt_enable_default);
+
+void wbt_init_enable_default(struct request_queue *q)
+{
+	if (__wbt_enable_default(q))
+		WARN_ON_ONCE(wbt_init(q));
+}
+EXPORT_SYMBOL_GPL(wbt_init_enable_default);
 
 u64 wbt_default_latency_nsec(struct request_queue *q)
 {

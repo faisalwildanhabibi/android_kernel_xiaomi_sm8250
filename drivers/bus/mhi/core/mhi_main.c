@@ -461,6 +461,9 @@ int mhi_queue_skb(struct mhi_device *mhi_dev,
 	/* toggle wake to exit out of M2 */
 	mhi_cntrl->wake_toggle(mhi_cntrl);
 
+	if (mhi_cntrl->pm_state != MHI_PM_M0)
+		mhi_trigger_resume(mhi_cntrl);
+
 	/* generate the tre */
 	buf_info = buf_ring->wp;
 	buf_info->v_addr = skb->data;
@@ -1562,13 +1565,14 @@ void mhi_ev_task(unsigned long data)
 {
 	struct mhi_event *mhi_event = (struct mhi_event *)data;
 	struct mhi_controller *mhi_cntrl = mhi_event->mhi_cntrl;
+	unsigned long flags;
 
 	MHI_VERB("Enter for ev_index:%d\n", mhi_event->er_index);
 
 	/* process all pending events */
-	spin_lock_bh(&mhi_event->lock);
+	spin_lock_irqsave(&mhi_event->lock, flags);
 	mhi_event->process_event(mhi_cntrl, mhi_event, U32_MAX);
-	spin_unlock_bh(&mhi_event->lock);
+	spin_unlock_irqrestore(&mhi_event->lock, flags);
 }
 
 void mhi_ctrl_ev_task(unsigned long data)
@@ -1657,8 +1661,6 @@ irqreturn_t mhi_intvec_threaded_handlr(int irq_number, void *dev)
 	enum MHI_PM_STATE pm_state = 0;
 	enum mhi_ee ee = 0;
 
-	MHI_VERB("Enter\n");
-
 	write_lock_irq(&mhi_cntrl->pm_lock);
 	if (!MHI_REG_ACCESS_VALID(mhi_cntrl->pm_state)) {
 		write_unlock_irq(&mhi_cntrl->pm_lock);
@@ -1720,8 +1722,6 @@ irqreturn_t mhi_intvec_threaded_handlr(int irq_number, void *dev)
 	}
 
 exit_intvec:
-	MHI_VERB("Exit\n");
-
 	return IRQ_HANDLED;
 }
 
@@ -2175,15 +2175,15 @@ int mhi_debugfs_mhi_regdump_show(struct seq_file *m, void *d)
 		int offset;
 		void __iomem *base;
 	} debug_reg[] = {
+		{ "BHI_ERRDBG2", BHI_ERRDBG2, bhi_base},
+		{ "BHI_ERRDBG3", BHI_ERRDBG3, bhi_base},
+		{ "BHI_ERRDBG1", BHI_ERRDBG1, bhi_base},
+		{ "BHI_ERRCODE", BHI_ERRCODE, bhi_base},
+		{ "BHI_EXECENV", BHI_EXECENV, bhi_base},
+		{ "BHI_STATUS", BHI_STATUS, bhi_base},
 		{ "MHI_CNTRL", MHICTRL, mhi_base},
 		{ "MHI_STATUS", MHISTATUS, mhi_base},
 		{ "MHI_WAKE_DB", 0, wake_db},
-		{ "BHI_EXECENV", BHI_EXECENV, bhi_base},
-		{ "BHI_STATUS", BHI_STATUS, bhi_base},
-		{ "BHI_ERRCODE", BHI_ERRCODE, bhi_base},
-		{ "BHI_ERRDBG1", BHI_ERRDBG1, bhi_base},
-		{ "BHI_ERRDBG2", BHI_ERRDBG2, bhi_base},
-		{ "BHI_ERRDBG3", BHI_ERRDBG3, bhi_base},
 		{ "BHIE_TXVEC_DB", BHIE_TXVECDB_OFFS, bhie_base},
 		{ "BHIE_TXVEC_STATUS", BHIE_TXVECSTATUS_OFFS, bhie_base},
 		{ "BHIE_RXVEC_DB", BHIE_RXVECDB_OFFS, bhie_base},
@@ -2828,15 +2828,15 @@ void mhi_debug_reg_dump(struct mhi_controller *mhi_cntrl)
 		int offset;
 		void __iomem *base;
 	} debug_reg[] = {
+		{ "BHI_ERRDBG2", BHI_ERRDBG2, bhi_base},
+		{ "BHI_ERRDBG3", BHI_ERRDBG3, bhi_base},
+		{ "BHI_ERRDBG1", BHI_ERRDBG1, bhi_base},
+		{ "BHI_ERRCODE", BHI_ERRCODE, bhi_base},
+		{ "BHI_EXECENV", BHI_EXECENV, bhi_base},
+		{ "BHI_STATUS", BHI_STATUS, bhi_base},
 		{ "MHI_CNTRL", MHICTRL, mhi_base},
 		{ "MHI_STATUS", MHISTATUS, mhi_base},
 		{ "MHI_WAKE_DB", 0, wake_db},
-		{ "BHI_EXECENV", BHI_EXECENV, bhi_base},
-		{ "BHI_STATUS", BHI_STATUS, bhi_base},
-		{ "BHI_ERRCODE", BHI_ERRCODE, bhi_base},
-		{ "BHI_ERRDBG1", BHI_ERRDBG1, bhi_base},
-		{ "BHI_ERRDBG2", BHI_ERRDBG2, bhi_base},
-		{ "BHI_ERRDBG3", BHI_ERRDBG3, bhi_base},
 		{ "BHIE_TXVEC_DB", BHIE_TXVECDB_OFFS, bhie_base},
 		{ "BHIE_TXVEC_STATUS", BHIE_TXVECSTATUS_OFFS, bhie_base},
 		{ "BHIE_RXVEC_DB", BHIE_RXVECDB_OFFS, bhie_base},
