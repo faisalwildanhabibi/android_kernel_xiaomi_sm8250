@@ -2910,7 +2910,9 @@ int dp_addba_requestprocess_wifi3(struct cdp_soc_t *cdp_soc,
 
 	if (rx_tid->ba_status == DP_RX_BA_IN_PROGRESS) {
 		qdf_spin_unlock_bh(&rx_tid->tid_lock);
-		status = QDF_STATUS_E_FAILURE;
+		QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_DEBUG,
+			  "%s: ADDBA in progress for tid %d\n", __func__, tid);
+		status = QDF_STATUS_E_ALREADY;
 		goto fail;
 	}
 

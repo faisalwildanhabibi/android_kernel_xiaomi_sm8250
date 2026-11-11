@@ -1257,21 +1257,40 @@ int wlan_hdd_bus_suspend_noirq(void)
 	if (errno)
 		goto done;
 
-	errno = ucfg_pmo_psoc_is_target_wake_up_received(hdd_ctx->psoc);
-	if (errno == -EAGAIN) {
-		hdd_err("Firmware attempting wakeup, try again");
-		wlan_hdd_inc_suspend_stats(hdd_ctx,
-					   SUSPEND_FAIL_INITIAL_WAKEUP);
+	{
+		int retry_cnt = 3;
+
+		while (retry_cnt--) {
+			errno = ucfg_pmo_psoc_is_target_wake_up_received(hdd_ctx->psoc);
+			if (errno != -EAGAIN)
+				break;
+			qdf_mdelay(2);
+		}
+
+		if (errno == -EAGAIN) {
+			hdd_info("Firmware attempting wakeup, clear transient initial wakeup");
+			wlan_hdd_inc_suspend_stats(hdd_ctx,
+						   SUSPEND_FAIL_INITIAL_WAKEUP);
+			ucfg_pmo_psoc_clear_target_wake_up(hdd_ctx->psoc);
+			errno = 0;
+		}
 	}
 	if (errno)
 		goto resume_hif_noirq;
 
-	pending_events = wma_critical_events_in_flight();
-	if (pending_events) {
-		hdd_err("%d critical event(s) in flight; try again",
-			pending_events);
-		errno = -EAGAIN;
-		goto resume_hif_noirq;
+	{
+		int event_retry = 5;
+
+		while ((pending_events = wma_critical_events_in_flight()) && event_retry--) {
+			qdf_mdelay(2);
+		}
+
+		if (pending_events) {
+			hdd_err("%d critical event(s) in flight; try again",
+				pending_events);
+			errno = -EAGAIN;
+			goto resume_hif_noirq;
+		}
 	}
 
 	hdd_ctx->suspend_resume_stats.suspends++;

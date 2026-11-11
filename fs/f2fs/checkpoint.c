@@ -1170,6 +1170,15 @@ int f2fs_sync_inode_meta(struct f2fs_sb_info *sbi)
 		fi = list_first_entry(head, struct f2fs_inode_info,
 							gdirty_list);
 		inode = igrab(&fi->vfs_inode);
+		if (!inode) {
+			list_del_init(&fi->gdirty_list);
+			dec_page_count(sbi, F2FS_DIRTY_IMETA);
+			clear_inode_flag(&fi->vfs_inode, FI_DIRTY_INODE);
+			clear_inode_flag(&fi->vfs_inode, FI_AUTO_RECOVER);
+			stat_dec_dirty_inode(sbi, DIRTY_META);
+			spin_unlock(&sbi->inode_lock[DIRTY_META]);
+			continue;
+		}
 		spin_unlock(&sbi->inode_lock[DIRTY_META]);
 		if (inode) {
 			sync_inode_metadata(inode, 0);

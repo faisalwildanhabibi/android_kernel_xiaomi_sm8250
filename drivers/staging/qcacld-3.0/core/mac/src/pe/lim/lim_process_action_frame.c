@@ -1712,8 +1712,11 @@ static void lim_process_addba_req(struct mac_context *mac_ctx, uint8_t *rx_pkt_i
 					addba_req->addba_param_set.tid,
 					WMI_MGMT_TX_COMP_TYPE_DISCARD);
 		}
-	} else {
+	} else if (qdf_status != QDF_STATUS_E_ALREADY) {
 		pe_err_rl("Failed to process addba request");
+	} else {
+		pe_debug("ADDBA request already in progress for tid %d",
+			 addba_req->addba_param_set.tid);
 	}
 
 error:
@@ -1769,7 +1772,8 @@ static void lim_process_delba_req(struct mac_context *mac_ctx, uint8_t *rx_pkt_i
 			delba_req->delba_param_set.tid, delba_req->Reason.code);
 
 	if (QDF_STATUS_SUCCESS != qdf_status)
-		pe_err("Failed to process delba request");
+		pe_debug("delba request for tid %d status: %d",
+			 delba_req->delba_param_set.tid, qdf_status);
 
 error:
 	qdf_mem_free(delba_req);

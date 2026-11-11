@@ -72,7 +72,7 @@
 	"gHwFilterMode", \
 	0, \
 	3, \
-	1, \
+	3, \
 	CFG_VALUE_OR_DEFAULT, \
 	"hardware filter for DTIM mode")
 
