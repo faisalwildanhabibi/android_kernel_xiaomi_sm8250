@@ -243,7 +243,7 @@ echo " [*] Packaging into Flashable AnyKernel3 ZIP"
 echo "==========================================="
 ANYKERNEL_DIR="anykernel"
 rm -rf "${ANYKERNEL_DIR}"
-git clone https://github.com/AstideLabs/AnyKernel3 -b kona --single-branch --depth=1 "${ANYKERNEL_DIR}"
+git clone https://github.com/osm0sis/AnyKernel3 -b master --single-branch --depth=1 "${ANYKERNEL_DIR}"
 
 cp "${OUT_DIR}/arch/arm64/boot/Image" "${ANYKERNEL_DIR}/Image"
 
