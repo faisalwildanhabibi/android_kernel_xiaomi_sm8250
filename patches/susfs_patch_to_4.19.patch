@@ -2801,19 +2801,19 @@ index ad160dbe4429..d61c687b44af 100644
  	int dev;
  
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-+	// - Here we can persistently check if current process is a ksu process,
-+	//   and assign a sus anon bdev to it if so.
-+	// - It is mainly used for spoofing /proc/[pid]/mountinfo stat anon dev in ksu process.
-+	// - So right after ksu mounts a partition/filesystem, the mnt_sb->s_dev will be a
-+	//   sus anon bdev, and this makes sus mountinfo able to recognize whether it is a
-+	//   sus mount or not, instead of check if it is under sus_mnt_id.
 +	if (static_branch_unlikely(&susfs_is_sdcard_android_data_not_decrypted)) {
 +		if (susfs_is_current_ksu_domain()) {
-+			dev = ida_alloc_range(&unnamed_dev_ida, DEFAULT_KSU_ANON_BDEV_START, DEFAULT_KSU_ANON_BDEV_END, GFP_ATOMIC);
-+			goto bypass_orig_flow;
++			dev = ida_alloc_range(&unnamed_dev_ida, DEFAULT_KSU_MNT_MINOR_DEV, (1 << MINORBITS) - 1,
++				GFP_ATOMIC);
++			if (dev == -ENOSPC)
++				dev = -EMFILE;
++			if (dev < 0)
++				return dev;
++
++			*p = MKDEV(0, dev);
++			return 0;
 +		}
 +	}
-+bypass_orig_flow:
 +#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +
  	/*
