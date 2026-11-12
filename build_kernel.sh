@@ -67,19 +67,19 @@ echo "[*] Checking Clang version..."
 clang --version || { echo "[!] Clang not found at ${TOOLCHAIN_BIN}. Please check the path."; exit 1; }
 
 # ==========================================
-# BakaSU, SuSFS & NoMount Setup
+# KernelSU (Custom), SuSFS & NoMount Setup
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "==========================================="
-    echo " [*] Initializing BakaSU, SuSFS & NoMount Setup"
+    echo " [*] Initializing KernelSU (Custom), SuSFS & NoMount Setup"
     echo "==========================================="
 
-    # 1. Setup BakaSU
-    echo "[*] Downloading BakaSU setup script..."
+    # 1. Setup Custom KernelSU
+    echo "[*] Downloading Custom KernelSU setup script..."
     KSU_SETUP_TMP=$(mktemp)
-    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
-        echo "[+] BakaSU script retrieved successfully."
-        bash "$KSU_SETUP_TMP" main
+    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/faisalwildanhabibi/KernelSU/custom/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+        echo "[+] Custom KernelSU script retrieved successfully."
+        bash "$KSU_SETUP_TMP" custom/main
         rm -f "$KSU_SETUP_TMP"
 
         # Compatibility adjustments for SuSFS
@@ -87,7 +87,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
             sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
         fi
     else
-        echo "[-] Failed to retrieve valid BakaSU setup script!"
+        echo "[-] Failed to retrieve valid KernelSU setup script!"
         rm -f "$KSU_SETUP_TMP"
         exit 1
     fi
@@ -141,7 +141,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         rm -rf "$WG_TMP"
     fi
 
-    echo "[+] BakaSU, SuSFS, NoMount & WireGuard setup finished."
+    echo "[+] KernelSU, SuSFS, NoMount & WireGuard setup finished."
 fi
 
 # ==========================================
@@ -191,7 +191,7 @@ scripts/config --file "${OUT_DIR}/.config" \
     -d SECURITY_SELINUX_DEVELOP
 
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    echo "[*] Injecting BakaSU, SuSFS & NoMount configurations..."
+    echo "[*] Injecting KernelSU, SuSFS & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
         -e KSU_SUSFS \
@@ -270,7 +270,7 @@ sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
 KSU_TAG="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    KSU_TAG="BakaSU-SuSFS-NoMount-WG"
+    KSU_TAG="CustomKSU-SuSFS-NoMount-WG"
 fi
 
 ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"
