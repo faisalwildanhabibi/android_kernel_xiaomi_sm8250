@@ -2908,6 +2908,8 @@ index 0000000..ebca4a6
 +#else
 +#define SUSFS_LOGI(fmt, ...) 
 +#define SUSFS_LOGE(fmt, ...) 
++#define SUSFS_LOGI_RL(fmt, ...) 
++#define SUSFS_LOGE_RL(fmt, ...) 
 +#endif
 +
 +static DEFINE_MUTEX(susfs_mutex_lock_sus_type);
