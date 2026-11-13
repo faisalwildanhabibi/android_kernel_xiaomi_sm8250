@@ -195,7 +195,12 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
         -e KSU_SUSFS \
-        -e NOMOUNT
+        -e NOMOUNT \
+        -e KPROBES \
+        -e HAVE_KPROBES \
+        -e KRETPROBES \
+        -e HAVE_KRETPROBES \
+        -e KPROBE_EVENTS
 fi
 
 make "${MAKE_OPTS[@]}" olddefconfig
