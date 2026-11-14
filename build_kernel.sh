@@ -77,9 +77,9 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     # 1. Setup BakaSU
     echo "[*] Downloading BakaSU setup script..."
     KSU_SETUP_TMP=$(mktemp)
-    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/faisalwildanhabibi/BakaSU/custom/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
         echo "[+] BakaSU script retrieved successfully."
-        bash "$KSU_SETUP_TMP" main
+        KSU_REPO="https://github.com/faisalwildanhabibi/BakaSU" bash "$KSU_SETUP_TMP" custom/main
         rm -f "$KSU_SETUP_TMP"
 
         # Compatibility adjustments for SuSFS
@@ -195,6 +195,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
         -e KSU_SUSFS \
+        -e KSU_PERSISTENT_ADB \
         -e NOMOUNT
 fi
 
