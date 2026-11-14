@@ -77,18 +77,10 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     # 1. Setup SukiSU-Ultra
     echo "[*] Downloading SukiSU-Ultra setup script..."
     KSU_SETUP_TMP=$(mktemp)
-    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/sukisu-ultra/sukisu-ultra/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
         echo "[+] SukiSU-Ultra script retrieved successfully."
-        bash "$KSU_SETUP_TMP" main
+        bash "$KSU_SETUP_TMP" builtin
         rm -f "$KSU_SETUP_TMP"
-
-        # Compatibility adjustments for SukiSU-Ultra on Linux 4.19
-        if [ -f "KernelSU/kernel/core/init.c" ]; then
-            sed -i '1i #ifndef MODULE_IMPORT_NS\n#define MODULE_IMPORT_NS(ns)\n#endif' KernelSU/kernel/core/init.c
-        fi
-        if [ -f "KernelSU/kernel/Kconfig" ]; then
-            sed -i 's/depends on KPROBES && EXT4_FS/depends on EXT4_FS/' KernelSU/kernel/Kconfig
-        fi
     else
         echo "[-] Failed to retrieve valid SukiSU-Ultra setup script!"
         rm -f "$KSU_SETUP_TMP"
