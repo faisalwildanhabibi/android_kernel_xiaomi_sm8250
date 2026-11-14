@@ -81,6 +81,11 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[+] SukiSU-Ultra script retrieved successfully."
         bash "$KSU_SETUP_TMP" builtin
         rm -f "$KSU_SETUP_TMP"
+
+        # Compatibility adjustments for Linux 4.19
+        if [ -f "KernelSU/kernel/kernel_includes.h" ]; then
+            sed -i 's/#include <linux\/static_call.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\n#include <linux\/static_call.h>\n#endif/' KernelSU/kernel/kernel_includes.h
+        fi
     else
         echo "[-] Failed to retrieve valid SukiSU-Ultra setup script!"
         rm -f "$KSU_SETUP_TMP"
