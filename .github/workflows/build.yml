@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - 'seventeen-bakasu-susfs'
+      - 'seventeen-sukisu'
     paths:
       - 'build_kernel.sh'
       - 'patches/**'
