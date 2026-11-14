@@ -82,9 +82,12 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         bash "$KSU_SETUP_TMP" main
         rm -f "$KSU_SETUP_TMP"
 
-        # Compatibility adjustments for SukiSU-Ultra on Linux 4.19 (missing MODULE_IMPORT_NS)
+        # Compatibility adjustments for SukiSU-Ultra on Linux 4.19
         if [ -f "KernelSU/kernel/core/init.c" ]; then
             sed -i '1i #ifndef MODULE_IMPORT_NS\n#define MODULE_IMPORT_NS(ns)\n#endif' KernelSU/kernel/core/init.c
+        fi
+        if [ -f "KernelSU/kernel/Kconfig" ]; then
+            sed -i 's/depends on KPROBES && EXT4_FS/depends on EXT4_FS/' KernelSU/kernel/Kconfig
         fi
     else
         echo "[-] Failed to retrieve valid SukiSU-Ultra setup script!"
@@ -178,9 +181,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "[*] Injecting SukiSU-Ultra & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
-        -e NOMOUNT \
-        -e KPROBES \
-        -e KPROBE_EVENTS
+        -e NOMOUNT
 fi
 
 make "${MAKE_OPTS[@]}" olddefconfig
