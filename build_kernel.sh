@@ -67,11 +67,11 @@ echo "[*] Checking Clang version..."
 clang --version || { echo "[!] Clang not found at ${TOOLCHAIN_BIN}. Please check the path."; exit 1; }
 
 # ==========================================
-# SukiSU-Ultra, SuSFS & NoMount Setup
+# SukiSU-Ultra & NoMount Setup
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "==========================================="
-    echo " [*] Initializing SukiSU-Ultra, SuSFS & NoMount Setup"
+    echo " [*] Initializing SukiSU-Ultra & NoMount Setup"
     echo "==========================================="
 
     # 1. Setup SukiSU-Ultra
@@ -81,11 +81,6 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[+] SukiSU-Ultra script retrieved successfully."
         bash "$KSU_SETUP_TMP" main
         rm -f "$KSU_SETUP_TMP"
-
-        # Compatibility adjustments for SuSFS
-        if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
-            sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
-        fi
 
         # Compatibility adjustments for SukiSU-Ultra on Linux 4.19 (missing MODULE_IMPORT_NS)
         if [ -f "KernelSU/kernel/core/init.c" ]; then
@@ -97,23 +92,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         exit 1
     fi
 
-    # 2. Apply SuSFS 4.19 Kernel Patch
-    if [ ! -f "fs/susfs.c" ]; then
-        echo "[*] Initializing SuSFS 4.19 Kernel Patch..."
-        SUSFS_PATCH_FILE="patches/susfs_patch_to_4.19.patch"
-        if [ ! -f "$SUSFS_PATCH_FILE" ]; then
-            echo "[!] Error: Repository SuSFS patch ($SUSFS_PATCH_FILE) not found!"
-            exit 1
-        fi
-
-        echo "[*] Applying SuSFS patch (${SUSFS_PATCH_FILE})..."
-        patch -p1 --forward < "$SUSFS_PATCH_FILE"
-        echo "[+] SuSFS kernel patch applied successfully."
-    else
-        echo "[*] SuSFS kernel code already present."
-    fi
-
-    # 3. Setup NoMount
+    # 2. Setup NoMount
     if [ ! -d "NoMount" ]; then
         echo "[*] Downloading NoMount setup script..."
         NOMOUNT_SETUP_TMP=$(mktemp)
@@ -130,7 +109,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[*] NoMount code already present."
     fi
 
-    # 4. Verify WireGuard Driver
+    # 3. Verify WireGuard Driver
     if [ -d "drivers/net/wireguard" ]; then
         echo "[+] Native in-tree WireGuard driver present in drivers/net/wireguard."
     else
@@ -146,7 +125,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         rm -rf "$WG_TMP"
     fi
 
-    echo "[+] KernelSU, SuSFS, NoMount & WireGuard setup finished."
+    echo "[+] SukiSU-Ultra, NoMount & WireGuard setup finished."
 fi
 
 # ==========================================
@@ -196,10 +175,9 @@ scripts/config --file "${OUT_DIR}/.config" \
     -d SECURITY_SELINUX_DEVELOP
 
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    echo "[*] Injecting SukiSU-Ultra, SuSFS & NoMount configurations..."
+    echo "[*] Injecting SukiSU-Ultra & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
-        -e KSU_SUSFS \
         -e NOMOUNT \
         -e KPROBES \
         -e KPROBE_EVENTS
@@ -277,7 +255,7 @@ sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
 KSU_TAG="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    KSU_TAG="SukiSU-SuSFS-NoMount-WG"
+    KSU_TAG="SukiSU-NoMount-WG"
 fi
 
 ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"
