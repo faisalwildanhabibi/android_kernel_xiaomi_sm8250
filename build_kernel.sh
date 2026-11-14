@@ -86,6 +86,12 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         if [ -f "KernelSU/kernel/kernel_includes.h" ]; then
             sed -i 's/#include <linux\/static_call.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\n#include <linux\/static_call.h>\n#endif/' KernelSU/kernel/kernel_includes.h
         fi
+        if [ -f "KernelSU/kernel/extension/kpm/kpm.c" ]; then
+            sed -i 's/!access_ok(/!access_ok(VERIFY_WRITE, /' KernelSU/kernel/extension/kpm/kpm.c
+        fi
+        if [ -f "KernelSU/kernel/selinux/rules.c" ]; then
+            sed -i 's/struct selinux_policy \*pol, \*old_pol;/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\n    struct selinux_policy *pol, *old_pol;\n#endif/' KernelSU/kernel/selinux/rules.c
+        fi
     else
         echo "[-] Failed to retrieve valid SukiSU-Ultra setup script!"
         rm -f "$KSU_SETUP_TMP"
