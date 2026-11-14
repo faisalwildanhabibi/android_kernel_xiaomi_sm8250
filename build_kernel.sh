@@ -87,7 +87,23 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         exit 1
     fi
 
-    # 2. Setup NoMount
+    # 2. Apply SuSFS 4.19 Kernel Patch
+    if [ ! -f "fs/susfs.c" ]; then
+        echo "[*] Initializing SuSFS 4.19 Kernel Patch..."
+        SUSFS_PATCH_FILE="patches/susfs_patch_to_4.19.patch"
+        if [ ! -f "$SUSFS_PATCH_FILE" ]; then
+            echo "[!] Error: Repository SuSFS patch ($SUSFS_PATCH_FILE) not found!"
+            exit 1
+        fi
+
+        echo "[*] Applying SuSFS patch (${SUSFS_PATCH_FILE})..."
+        patch -p1 --forward < "$SUSFS_PATCH_FILE"
+        echo "[+] SuSFS kernel patch applied successfully."
+    else
+        echo "[*] SuSFS kernel code already present."
+    fi
+
+    # 3. Setup NoMount
     if [ ! -d "NoMount" ]; then
         echo "[*] Downloading NoMount setup script..."
         NOMOUNT_SETUP_TMP=$(mktemp)
@@ -170,9 +186,10 @@ scripts/config --file "${OUT_DIR}/.config" \
     -d SECURITY_SELINUX_DEVELOP
 
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    echo "[*] Injecting SukiSU-Ultra & NoMount configurations..."
+    echo "[*] Injecting SukiSU-Ultra, SuSFS & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
+        -e KSU_SUSFS \
         -e NOMOUNT
 fi
 
@@ -248,7 +265,7 @@ sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
 KSU_TAG="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    KSU_TAG="SukiSU-NoMount-WG"
+    KSU_TAG="SukiSU-SuSFS-NoMount-WG"
 fi
 
 ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"
