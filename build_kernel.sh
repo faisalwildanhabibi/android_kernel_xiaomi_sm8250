@@ -86,6 +86,11 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
             sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
         fi
+
+        # Compatibility adjustments for SukiSU-Ultra on Linux 4.19 (missing MODULE_IMPORT_NS)
+        if [ -f "KernelSU/kernel/core/init.c" ]; then
+            sed -i '1i #ifndef MODULE_IMPORT_NS\n#define MODULE_IMPORT_NS(ns)\n#endif' KernelSU/kernel/core/init.c
+        fi
     else
         echo "[-] Failed to retrieve valid SukiSU-Ultra setup script!"
         rm -f "$KSU_SETUP_TMP"
