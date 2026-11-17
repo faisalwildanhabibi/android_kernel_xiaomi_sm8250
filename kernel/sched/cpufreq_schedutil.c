@@ -954,6 +954,11 @@ static ssize_t down_rate_limit_us_store(struct gov_attr_set *attr_set,
 	if (kstrtouint(buf, 10, &rate_limit_us))
 		return -EINVAL;
 
+	/* Enforce a minimum floor of 20000 us (20 ms) to prevent excessive frequency
+	 * throttling and VSYNC stutter during brief intra-frame drops */
+	if (rate_limit_us < 20000)
+		rate_limit_us = 20000;
+
 	tunables->down_rate_limit_us = rate_limit_us;
 
 	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
@@ -1272,7 +1277,7 @@ static int sugov_init(struct cpufreq_policy *policy)
 	}
 
 	tunables->up_rate_limit_us = cpufreq_policy_transition_delay_us(policy);
-	tunables->down_rate_limit_us = cpufreq_policy_transition_delay_us(policy);
+	tunables->down_rate_limit_us = max(20000U, cpufreq_policy_transition_delay_us(policy));
 	tunables->hispeed_load = DEFAULT_HISPEED_LOAD;
 	tunables->hispeed_freq = 0;
 
