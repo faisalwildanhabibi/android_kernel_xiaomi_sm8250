@@ -86,6 +86,11 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
             sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
         fi
+
+        # Remove orphan vfs_hide references in init.c if present
+        if [ -f "KernelSU/kernel/core/init.c" ]; then
+            sed -i '/vfs_hide/d' KernelSU/kernel/core/init.c
+        fi
     else
         echo "[-] Failed to retrieve valid CustomSU setup script!"
         rm -f "$KSU_SETUP_TMP"
