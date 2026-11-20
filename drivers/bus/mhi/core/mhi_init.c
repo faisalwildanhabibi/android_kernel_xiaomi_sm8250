@@ -131,8 +131,7 @@ static ssize_t time_show(struct device *dev,
 	ret = mhi_get_remote_time_sync(mhi_dev, &t_host, &t_device);
 	if (ret) {
 		MHI_ERR("Failed to obtain time, ret:%d\n", ret);
-		return scnprintf(buf, PAGE_SIZE,
-				 "Request failed or feature unsupported\n");
+		return ret;
 	}
 
 	return scnprintf(buf, PAGE_SIZE, "local: %llu remote: %llu (ticks)\n",
@@ -152,8 +151,7 @@ static ssize_t time_us_show(struct device *dev,
 	ret = mhi_get_remote_time_sync(mhi_dev, &t_host, &t_device);
 	if (ret) {
 		MHI_ERR("Failed to obtain time, ret:%d\n", ret);
-		return scnprintf(buf, PAGE_SIZE,
-				 "Request failed or feature unsupported\n");
+		return ret;
 	}
 
 	return scnprintf(buf, PAGE_SIZE, "local: %llu remote: %llu (us)\n",
@@ -1713,6 +1711,8 @@ void mhi_unregister_mhi_controller(struct mhi_controller *mhi_cntrl)
 {
 	struct mhi_device *mhi_dev = mhi_cntrl->mhi_dev;
 	struct mhi_sfr_info *sfr_info = mhi_cntrl->mhi_sfr;
+
+	destroy_workqueue(mhi_cntrl->wq);
 
 	kfree(mhi_cntrl->mhi_cmd);
 	kfree(mhi_cntrl->mhi_event);
