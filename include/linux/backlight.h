@@ -72,6 +72,7 @@ struct backlight_properties {
 	int brightness_clone;
 	int brightness_clone_backup;
 	int max_brightness_clone;
+	int bl_df;
 	/* Maximal value for brightness (read-only) */
 	int max_brightness;
 	/* Current FB Power mode (0: full on, 1..3: power saving

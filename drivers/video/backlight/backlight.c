@@ -241,13 +241,23 @@ static ssize_t bl_df_store(struct device *dev,
 {
 	struct backlight_device *bd = to_backlight_device(dev);
 	unsigned long brightness;
-	int rc;
+	int rc = 0;
 
 	rc = kstrtoul(buf, 0, &brightness);
 	if (rc)
 		return rc;
 
-	rc = backlight_device_set_brightness(bd, brightness);
+	mutex_lock(&bd->ops_lock);
+	if (bd->ops) {
+		if (brightness > bd->props.max_brightness)
+			rc = -EINVAL;
+		else {
+			bd->props.bl_df = brightness;
+			rc = backlight_update_status(bd);
+		}
+	}
+	mutex_unlock(&bd->ops_lock);
+
 	return rc ? rc : count;
 }
 
@@ -256,7 +266,7 @@ static ssize_t bl_df_show(struct device *dev,
 {
 	struct backlight_device *bd = to_backlight_device(dev);
 
-	return sprintf(buf, "%d\n", bd->props.brightness);
+	return sprintf(buf, "%d\n", bd->props.bl_df);
 }
 static DEVICE_ATTR_RW(bl_df);
 

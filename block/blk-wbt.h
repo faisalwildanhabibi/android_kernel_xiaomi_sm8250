@@ -92,6 +92,7 @@ int wbt_init(struct request_queue *);
 void wbt_update_limits(struct request_queue *);
 void wbt_disable_default(struct request_queue *);
 void wbt_enable_default(struct request_queue *);
+void wbt_init_enable_default(struct request_queue *);
 
 u64 wbt_get_min_lat(struct request_queue *q);
 void wbt_set_min_lat(struct request_queue *q, u64 val);
@@ -117,6 +118,9 @@ static inline void wbt_disable_default(struct request_queue *q)
 {
 }
 static inline void wbt_enable_default(struct request_queue *q)
+{
+}
+static inline void wbt_init_enable_default(struct request_queue *q)
 {
 }
 static inline void wbt_set_queue_depth(struct request_queue *q, unsigned int depth)

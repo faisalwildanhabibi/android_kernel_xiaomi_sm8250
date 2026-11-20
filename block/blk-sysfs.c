@@ -936,7 +936,7 @@ int blk_register_queue(struct gendisk *disk)
 
 	kobject_uevent(&q->kobj, KOBJ_ADD);
 
-	wbt_enable_default(q);
+	wbt_init_enable_default(q);
 
 	blk_throtl_register_queue(q);
 

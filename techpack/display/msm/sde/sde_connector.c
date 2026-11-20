@@ -77,6 +77,7 @@ static const struct drm_prop_enum_list e_frame_trigger_mode[] = {
 static int sde_backlight_device_update_status(struct backlight_device *bd)
 {
 	int brightness;
+	int effective_brightness;
 	struct dsi_display *display;
 	struct sde_connector *c_conn;
 	int bl_lvl;
@@ -98,15 +99,31 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 			(bd->props.state & BL_CORE_SUSPENDED))
 		brightness = 0;
 
-	if (brightness > display->panel->bl_config.brightness_max_level)
-		brightness = display->panel->bl_config.brightness_max_level;
+	effective_brightness = brightness;
 
-	if (brightness) {
+#ifdef CONFIG_MACH_XIAOMI
+	/*
+	 * bl_df is dedicated for DisplayFeature software DC dimming compensation
+	 * to elevate physical backlight at low brightness levels.
+	 * When AOSP requests HBM (brightness >= 2047) or when bl_df does not
+	 * exceed the requested brightness, do not allow bl_df to drag down
+	 * or override AOSP brightness.
+	 */
+	if (effective_brightness && effective_brightness < 2047 &&
+	    bd->props.bl_df > effective_brightness) {
+		effective_brightness = bd->props.bl_df;
+	}
+#endif
+
+	if (effective_brightness > display->panel->bl_config.brightness_max_level)
+		effective_brightness = display->panel->bl_config.brightness_max_level;
+
+	if (effective_brightness) {
 		int bl_min = display->panel->bl_config.bl_min_level ? : 1;
 		int bl_range = display->panel->bl_config.bl_max_level - bl_min;
 
 		/* map UI brightness into driver backlight level rounding it */
-		bl_lvl = bl_min + DIV_ROUND_CLOSEST((brightness - 1) * bl_range,
+		bl_lvl = bl_min + DIV_ROUND_CLOSEST((effective_brightness - 1) * bl_range,
 			display->panel->bl_config.brightness_max_level - 1);
 	} else {
 		bl_lvl = 0;
