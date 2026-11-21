@@ -3796,7 +3796,7 @@ int wma_roam_stats_event_handler(WMA_HANDLE handle, uint8_t *event,
 	}
 
 	if (param_buf->num_roam_scan_chan_info &&
-	    !param_buf->roam_scan_channel_info) {
+	    !param_buf->roam_scan_chan_info) {
 		wma_err_rl("Invalid roam chan data num_tlv:%d",
 			   param_buf->num_roam_scan_chan_info);
 		goto err;
@@ -3810,7 +3810,7 @@ int wma_roam_stats_event_handler(WMA_HANDLE handle, uint8_t *event,
 	}
 
 	if (param_buf->num_roam_neighbor_report_chan_info &&
-	    !param_buf->roam_neighbor_report_channel_info) {
+	    !param_buf->roam_neighbor_report_chan_info) {
 		wma_err_rl("Invalid roam neigb rpt chan data num_tlv:%d",
 			   param_buf->num_roam_neighbor_report_chan_info);
 		goto err;
