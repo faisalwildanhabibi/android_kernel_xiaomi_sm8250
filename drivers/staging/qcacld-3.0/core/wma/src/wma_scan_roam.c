@@ -3759,7 +3759,6 @@ int wma_roam_stats_event_handler(WMA_HANDLE handle, uint8_t *event,
 	struct mlme_roam_debug_info *roam_info = NULL;
 	uint8_t vdev_id, i;
 	uint8_t num_tlv = 0, num_chan = 0, num_ap = 0, num_rpt = 0;
-	uint32_t rem_len;
 	QDF_STATUS status;
 
 	param_buf = (WMI_ROAM_STATS_EVENTID_param_tlvs *)event;
@@ -3786,51 +3785,32 @@ int wma_roam_stats_event_handler(WMA_HANDLE handle, uint8_t *event,
 		num_tlv = MAX_ROAM_SCAN_STATS_TLV;
 	}
 
-	rem_len = len - sizeof(*fixed_param);
-	if (rem_len < num_tlv * sizeof(wmi_roam_trigger_reason)) {
-		wma_err_rl("Invalid roam trigger data");
-		goto err;
+	if (num_tlv) {
+		if (!param_buf->roam_trigger_reason ||
+		    !param_buf->roam_scan_info ||
+		    !param_buf->roam_result ||
+		    !param_buf->roam_neighbor_report_info) {
+			wma_err_rl("Invalid roam trigger data");
+			goto err;
+		}
 	}
 
-	rem_len -= num_tlv * sizeof(wmi_roam_trigger_reason);
-	if (rem_len < num_tlv * sizeof(wmi_roam_scan_info)) {
-		wma_err_rl("Invalid roam scan data");
-		goto err;
-	}
-
-	rem_len -= num_tlv * sizeof(wmi_roam_scan_info);
-	if (rem_len < num_tlv * sizeof(wmi_roam_result)) {
-		wma_err_rl("Invalid roam result data");
-		goto err;
-	}
-
-	rem_len -= num_tlv * sizeof(wmi_roam_result);
-	if (rem_len < (num_tlv * sizeof(wmi_roam_neighbor_report_info))) {
-		wma_err_rl("Invalid roam neighbor report data");
-		goto err;
-	}
-
-	rem_len -= num_tlv * sizeof(wmi_roam_neighbor_report_info);
-	if (rem_len < (param_buf->num_roam_scan_chan_info *
-		       sizeof(wmi_roam_scan_channel_info))) {
+	if (param_buf->num_roam_scan_chan_info &&
+	    !param_buf->roam_scan_channel_info) {
 		wma_err_rl("Invalid roam chan data num_tlv:%d",
 			   param_buf->num_roam_scan_chan_info);
 		goto err;
 	}
 
-	rem_len -= param_buf->num_roam_scan_chan_info *
-		   sizeof(wmi_roam_scan_channel_info);
-
-	if (rem_len < (param_buf->num_roam_ap_info *
-		       sizeof(wmi_roam_ap_info))) {
+	if (param_buf->num_roam_ap_info &&
+	    !param_buf->roam_ap_info) {
 		wma_err_rl("Invalid roam ap data num_tlv:%d",
 			   param_buf->num_roam_ap_info);
 		goto err;
 	}
 
-	rem_len -= param_buf->num_roam_ap_info * sizeof(wmi_roam_ap_info);
-	if (rem_len < (param_buf->num_roam_neighbor_report_chan_info *
-		       sizeof(wmi_roam_neighbor_report_channel_info))) {
+	if (param_buf->num_roam_neighbor_report_chan_info &&
+	    !param_buf->roam_neighbor_report_channel_info) {
 		wma_err_rl("Invalid roam neigb rpt chan data num_tlv:%d",
 			   param_buf->num_roam_neighbor_report_chan_info);
 		goto err;
