@@ -190,6 +190,16 @@ scripts/config --file "${OUT_DIR}/.config" \
     -e MQ_IOSCHED_KYBER \
     -d SECURITY_SELINUX_DEVELOP
 
+# ==========================================
+# DMA-BUF Sysfs Statistics Configurations
+# ==========================================
+echo "[*] Injecting DMA-BUF Sysfs configurations..."
+scripts/config --file "${OUT_DIR}/.config" \
+    -e DMABUF_SYSFS_STATS
+
+# ==========================================
+# Root, SuSFS & NoMount Configurations
+# ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "[*] Injecting BakaSU, SuSFS & NoMount configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
