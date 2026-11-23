@@ -539,8 +539,11 @@ static int gmu_dcvs_set(struct kgsl_device *device,
 	if (ADRENO_QUIRK(adreno_dev, ADRENO_QUIRK_HFI_USE_REG))
 		ret = gmu_dev_ops->rpmh_gpu_pwrctrl(device,
 			GMU_DCVS_NOHFI, req.freq, req.bw);
-	else if (test_bit(GMU_HFI_ON, &device->gmu_core.flags))
+	else if (test_bit(GMU_HFI_ON, &device->gmu_core.flags)) {
 		ret = hfi_send_req(gmu, H2F_MSG_GX_BW_PERF_VOTE, &req);
+		if (ret == -ETIMEDOUT)
+			ret = hfi_send_req(gmu, H2F_MSG_GX_BW_PERF_VOTE, &req);
+	}
 
 	if (ret) {
 		dev_err_ratelimited(&gmu->pdev->dev,
