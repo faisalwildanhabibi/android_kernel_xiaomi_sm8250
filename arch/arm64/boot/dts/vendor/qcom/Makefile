@@ -2,6 +2,7 @@ ifeq ($(CONFIG_MACH_XIAOMI),y)
 
 ifeq ($(CONFIG_MACH_XIAOMI_SM8250),y)
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+dtc_cpp_flags-$(CONFIG_K11A_PANEL_90HZ) += -DK11A_PANEL_90HZ
         dtbo-$(CONFIG_ARCH_KONA) += \
                 alioth-sm8250-overlay.dtbo \
                 apollo-sm8250-overlay.dtbo \

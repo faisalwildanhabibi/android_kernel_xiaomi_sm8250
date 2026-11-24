@@ -359,7 +359,7 @@ static void __tcp_ecn_check_ce(struct sock *sk, const struct sk_buff *skb)
 			tcp_enter_quickack_mode(sk, 2);
 		break;
 	case INET_ECN_CE:
-		if (tcp_ca_needs_ecn(sk))
+		if (tcp_ca_wants_ce_events(sk))
 			tcp_ca_event(sk, CA_EVENT_ECN_IS_CE);
 
 		if (!(tp->ecn_flags & TCP_ECN_DEMAND_CWR)) {
@@ -370,7 +370,7 @@ static void __tcp_ecn_check_ce(struct sock *sk, const struct sk_buff *skb)
 		tp->ecn_flags |= TCP_ECN_SEEN;
 		break;
 	default:
-		if (tcp_ca_needs_ecn(sk))
+		if (tcp_ca_wants_ce_events(sk))
 			tcp_ca_event(sk, CA_EVENT_ECN_NO_CE);
 		tp->ecn_flags |= TCP_ECN_SEEN;
 		break;
@@ -1003,10 +1003,15 @@ static void tcp_verify_retransmit_hint(struct tcp_sock *tp, struct sk_buff *skb)
 static void tcp_sum_lost(struct tcp_sock *tp, struct sk_buff *skb)
 {
 	__u8 sacked = TCP_SKB_CB(skb)->sacked;
+	struct sock *sk = (struct sock *)tp;
+	const struct tcp_congestion_ops *ca_ops = inet_csk(sk)->icsk_ca_ops;
 
 	if (!(sacked & TCPCB_LOST) ||
-	    ((sacked & TCPCB_LOST) && (sacked & TCPCB_SACKED_RETRANS)))
+	    ((sacked & TCPCB_LOST) && (sacked & TCPCB_SACKED_RETRANS))) {
 		tp->lost += tcp_skb_pcount(skb);
+		if (ca_ops->skb_marked_lost)
+			ca_ops->skb_marked_lost(sk, skb);
+	}
 }
 
 static void tcp_skb_mark_lost(struct tcp_sock *tp, struct sk_buff *skb)
@@ -1382,6 +1387,17 @@ static bool tcp_shifted_skb(struct sock *sk, struct sk_buff *prev,
 	tcp_skb_pcount_add(prev, pcount);
 	WARN_ON_ONCE(tcp_skb_pcount(skb) < pcount);
 	tcp_skb_pcount_add(skb, -pcount);
+
+	/* Adjust tx.in_flight as pcount is shifted from skb to prev. */
+	if (WARN_ONCE(TCP_SKB_CB(skb)->tx.in_flight < pcount,
+		      "prev in_flight: %u skb in_flight: %u pcount: %u",
+		      TCP_SKB_CB(prev)->tx.in_flight,
+		      TCP_SKB_CB(skb)->tx.in_flight,
+		      pcount))
+		TCP_SKB_CB(skb)->tx.in_flight = 0;
+	else
+		TCP_SKB_CB(skb)->tx.in_flight -= pcount;
+	TCP_SKB_CB(prev)->tx.in_flight += pcount;
 
 	/* When we're adding to gso_segs == 1, gso_size will be zero,
 	 * in theory this shouldn't be necessary but as long as DSACK
@@ -3757,6 +3773,10 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 
 	prior_fack = tcp_is_sack(tp) ? tcp_highest_sack_seq(tp) : tp->snd_una;
 	rs.prior_in_flight = tcp_packets_in_flight(tp);
+	rs.is_acking_tlp_retrans_seq = tcp_has_tlp_probe(tp) &&
+		(ack == tp->tlp_high_seq);
+	rs.is_ece = (flag & FLAG_ECE) != 0;
+	tcp_rate_check_app_limited(sk);
 
 	/* ts_recent update must be made after we are sure that the packet
 	 * is in window.

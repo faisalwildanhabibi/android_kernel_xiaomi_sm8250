@@ -16,6 +16,8 @@
 #include <linux/gfp.h>
 #include <linux/pagemap.h>
 #include <linux/swap.h>
+#include <linux/kthread.h>
+#include <linux/kfifo.h>
 #include <linux/bio.h>
 #include <linux/swapops.h>
 #include <linux/buffer_head.h>
@@ -197,6 +199,101 @@ bad_bmap:
  * We may have stale swap cache pages in memory: notice
  * them here and get rid of the unnecessary final write.
  */
+#ifdef CONFIG_KCOMPRESSD
+/* Queue depth (in pages) at which kswapd compresses the oldest page itself */
+int vm_kcompressd = 24;
+
+static void do_swapout(struct page *page)
+{
+	struct writeback_control wbc = {
+		.sync_mode = WB_SYNC_NONE,
+		.nr_to_write = SWAP_CLUSTER_MAX,
+		.range_start = 0,
+		.range_end = LLONG_MAX,
+		.for_reclaim = 1,
+	};
+
+	if (frontswap_store(page) == 0) {
+		set_page_writeback(page);
+		unlock_page(page);
+		end_page_writeback(page);
+	} else {
+		__swap_writepage(page, &wbc, end_swap_bio_write);
+	}
+
+	put_page(page);
+}
+
+/*
+ * Hand a locked anon page from kswapd to kcompressd, so zram compression
+ * doesn't stall reclaim. The page stays locked until kcompressd writes it,
+ * which makes shrink_page_list() keep it for the next pass.
+ */
+static bool kcompressd_store(struct page *page)
+{
+	pg_data_t *pgdat = NODE_DATA(page_to_nid(page));
+	unsigned int depth = READ_ONCE(vm_kcompressd);
+	struct page *head = NULL;
+	unsigned long flags;
+	unsigned int ret;
+
+	if (!current_is_kswapd() || !depth || unlikely(!pgdat->kcompressd))
+		return false;
+
+	/*
+	 * Not gated on SWP_SYNCHRONOUS_IO: this tree's zram doesn't set
+	 * BDI_CAP_SYNCHRONOUS_IO, and zram is the only swap device here.
+	 */
+	if (!PageAnon(page))
+		return false;
+
+	get_page(page);
+
+	spin_lock_irqsave(&pgdat->kcompress_fifo_lock, flags);
+	/* Queue is deep enough: kswapd takes the oldest page itself */
+	if (kfifo_len(pgdat->kcompress_fifo) >= depth * sizeof(page) &&
+	    !kfifo_out(pgdat->kcompress_fifo, &head, sizeof(page)))
+		head = NULL;
+	ret = kfifo_in(pgdat->kcompress_fifo, &page, sizeof(page));
+	spin_unlock_irqrestore(&pgdat->kcompress_fifo_lock, flags);
+
+	if (likely(ret))
+		wake_up_interruptible(&pgdat->kcompressd_wait);
+	else
+		put_page(page);
+
+	if (head)
+		do_swapout(head);
+
+	return ret;
+}
+
+int kcompressd(void *p)
+{
+	pg_data_t *pgdat = (pg_data_t *)p;
+	struct page *page;
+
+	current->flags |= PF_MEMALLOC | PF_KSWAPD;
+
+	while (!kthread_should_stop()) {
+		wait_event_interruptible(pgdat->kcompressd_wait,
+				!kfifo_is_empty(pgdat->kcompress_fifo) ||
+				kthread_should_stop());
+
+		while (kfifo_out_locked(pgdat->kcompress_fifo, &page,
+					sizeof(page),
+					&pgdat->kcompress_fifo_lock))
+			do_swapout(page);
+	}
+	return 0;
+}
+#else
+static inline bool kcompressd_store(struct page *page)
+{
+	return false;
+}
+#endif
+
 int swap_writepage(struct page *page, struct writeback_control *wbc)
 {
 	int ret = 0;
@@ -205,6 +302,10 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
 		unlock_page(page);
 		goto out;
 	}
+
+	if (kcompressd_store(page))
+		return 0;
+
 	if (frontswap_store(page) == 0) {
 		set_page_writeback(page);
 		unlock_page(page);

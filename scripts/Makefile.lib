@@ -171,7 +171,7 @@ DTC_INCLUDE    := $(srctree)/scripts/dtc/include-prefixes
 
 dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc                    \
 		 $(addprefix -I,$(DTC_INCLUDE))                          \
-		 -undef -D__DTS__
+		 -undef -D__DTS__ $(dtc_cpp_flags-y)
 
 # Useful for describing the dependency of composite objects
 # Usage:
