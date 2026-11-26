@@ -3,6 +3,10 @@ name: Build Kernel
 on:
   workflow_dispatch:
     inputs:
+      build_number:
+        description: 'Nomor Build (Kosongkan untuk menggunakan default env.BUILD_NUMBER)'
+        required: false
+        default: '199'
       device:
         description: 'Target Device Code'
         required: false
@@ -33,6 +37,9 @@ on:
 permissions:
   contents: write
 
+env:
+  BUILD_NUMBER: 199 # Nomor build acuan (dapat diubah bebas di sini kapan pun diinginkan)
+
 jobs:
   build-kernel:
     name: "Build Kernel (${{ matrix.variant_name }})"
@@ -43,10 +50,10 @@ jobs:
         include:
           - variant: official
             variant_name: "BakaSU Official"
-            tag_name: "BakaSU-SuSFS-NoMount-WG"
+            variant_label: "BakaSU"
           - variant: custom
             variant_name: "BakaSU CustomSU"
-            tag_name: "CustomSU-SuSFS-NoMount-WG"
+            variant_label: "CustomSU"
 
     steps:
     - name: "Checkout Repository"
@@ -60,6 +67,14 @@ jobs:
         sudo apt-get install -y --no-install-recommends \
           bc bison build-essential ccache curl flex gawk git gnupg \
           libelf-dev libncurses-dev libssl-dev lzop patch python3 rsync zip zlib1g-dev
+
+    - name: "Determine Effective Build Number"
+      run: |
+        BN="${{ github.event.inputs.build_number }}"
+        if [ -z "$BN" ]; then
+          BN="${{ env.BUILD_NUMBER }}"
+        fi
+        echo "EFFECTIVE_BUILD_NUM=${BN}" >> $GITHUB_ENV
 
     - name: "Cache ccache"
       uses: actions/cache@v4
@@ -100,63 +115,70 @@ jobs:
         KSU_FLAG="${{ github.event.inputs.ksu || 'true' }}"
         OS_FLAG="${{ github.event.inputs.target_os || 'aosp' }}"
         VARIANT="${{ matrix.variant }}"
+        export BUILD_NUMBER="${{ env.EFFECTIVE_BUILD_NUM }}"
 
         ARGS="$DEV"
         if [ "$KSU_FLAG" = "true" ]; then
           ARGS="$ARGS ksu"
         fi
-        ARGS="$ARGS $OS_FLAG $VARIANT"
+        ARGS="$ARGS $OS_FLAG $VARIANT $BUILD_NUMBER"
 
         echo "Executing: ./build_kernel.sh $ARGS"
         ./build_kernel.sh $ARGS
 
-    - name: "Generate Cryptographic Checksum"
-      run: |
-        sha256sum Kernel-*.zip > SHA256SUMS
-        echo "### Cryptographic Release Integrity (${{ matrix.variant_name }})" >> $GITHUB_STEP_SUMMARY
-        echo "| Artifact | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
-        echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
-        while read -r sum file; do
-          echo "| \`$file\` | \`$sum\` |" >> $GITHUB_STEP_SUMMARY
-        done < SHA256SUMS
-
-    - name: "Upload Flashable ZIP & Checksums (Artifact Backup)"
+    - name: "Upload Flashable Direct Kernel Artifact"
       uses: actions/upload-artifact@v4
       with:
-        name: Kernel-${{ github.event.inputs.device || 'alioth' }}-${{ matrix.tag_name }}-${{ github.run_id }}
-        path: |
-          Kernel-*.zip
-          SHA256SUMS
-        compression-level: 0
+        name: "${{ env.EFFECTIVE_BUILD_NUM }}-${{ matrix.variant_label }}"
+        path: pkg_${{ matrix.variant_label }}/*
+        compression-level: 9
 
   publish-release:
     name: "Publish Flashable Releases"
     needs: build-kernel
     runs-on: ubuntu-latest
     steps:
-      - name: "Download All Artifacts"
+      - name: "Determine Effective Build Number"
+        run: |
+          BN="${{ github.event.inputs.build_number }}"
+          if [ -z "$BN" ]; then
+            BN="${{ env.BUILD_NUMBER }}"
+          fi
+          echo "EFFECTIVE_BUILD_NUM=${BN}" >> $GITHUB_ENV
+
+      - name: "Download Built Package Artifacts"
         uses: actions/download-artifact@v4
         with:
-          path: release_assets
-          merge-multiple: true
+          path: release_staging
 
-      - name: "Create GitHub Release & Upload Direct Assets"
+      - name: "Repack Direct Flashable ZIPs for GitHub Releases"
+        run: |
+          mkdir -p release_direct
+          for d in release_staging/*; do
+            if [ -d "$d" ]; then
+              TAG_NAME=$(basename "$d")
+              cd "$d"
+              zip -r9 "../../release_direct/${TAG_NAME}.zip" * -x .git
+              cd ../..
+            fi
+          done
+
+      - name: "Create GitHub Release & Upload Direct ZIP Assets"
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}-alioth
-          name: "Kernel alioth Release #${{ github.run_number }}"
+          tag_name: v${{ env.EFFECTIVE_BUILD_NUM }}-alioth
+          name: "Kernel alioth Build #${{ env.EFFECTIVE_BUILD_NUM }}"
           body: |
             ### Automated Flashable Kernel Release for POCO F3 (alioth)
+            - **Build Number**: `#${{ env.EFFECTIVE_BUILD_NUM }}`
             - **Branch**: `seventeen-custom`
-            - **Workflow Run**: [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             - **Commit**: `${{ github.sha }}`
-            
-            Unduh langsung berkas ZIP di bawah ini (1-klik flashable tanpa ekstraksi pembungkus ganda):
-            - `Kernel-alioth-*-BakaSU-*.zip` (Varian BakaSU Resmi)
-            - `Kernel-alioth-*-CustomSU-*.zip` (Varian BakaSU CustomSU)
+
+            Unduh langsung berkas ZIP murni di bawah ini (1-klik langsung flash di Recovery tanpa ekstraksi ganda):
+            - `${{ env.EFFECTIVE_BUILD_NUM }}-BakaSU.zip` (Varian BakaSU Resmi)
+            - `${{ env.EFFECTIVE_BUILD_NUM }}-CustomSU.zip` (Varian BakaSU CustomSU)
           files: |
-            release_assets/Kernel-*.zip
-            release_assets/SHA256SUMS
+            release_direct/*.zip
           draft: false
           prerelease: false
         env:

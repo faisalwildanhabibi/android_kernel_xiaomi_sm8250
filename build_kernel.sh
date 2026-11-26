@@ -8,8 +8,8 @@ set -eo pipefail
 # ==========================================
 if [ -z "$1" ]; then
     echo "[!] Error: No device specified."
-    echo "Usage: $0 <device_name> [ksu] [aosp] [official|custom]"
-    echo "Example: $0 alioth ksu aosp official"
+    echo "Usage: $0 <device_name> [ksu] [aosp] [official|custom] [build_number]"
+    echo "Example: $0 alioth ksu aosp official 199"
     exit 1
 fi
 
@@ -27,6 +27,7 @@ fi
 ENABLE_KSU=0
 TARGET_OS="aosp"
 KSU_VARIANT="official"
+BUILD_NUM="${BUILD_NUMBER:-199}"
 
 shift
 for arg in "$@"; do
@@ -35,6 +36,7 @@ for arg in "$@"; do
         aosp) TARGET_OS="aosp" ;;
         official) KSU_VARIANT="official" ;;
         custom) KSU_VARIANT="custom" ;;
+        [0-9]*) BUILD_NUM="$arg" ;;
     esac
 done
 
@@ -72,6 +74,7 @@ clang --version || { echo "[!] Clang not found at ${TOOLCHAIN_BIN}. Please check
 # ==========================================
 # Root Solution, SuSFS & NoMount Setup
 # ==========================================
+TAG_SHORT="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
     if [ "$KSU_VARIANT" = "custom" ]; then
         echo "==========================================="
@@ -89,6 +92,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
             exit 1
         fi
         KSU_TAG="CustomSU-SuSFS-NoMount-WG"
+        TAG_SHORT="CustomSU"
     else
         echo "==========================================="
         echo " [*] Initializing Official BakaSU (Baka-SU/BakaSU), SuSFS & NoMount Setup"
@@ -105,6 +109,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
             exit 1
         fi
         KSU_TAG="BakaSU-SuSFS-NoMount-WG"
+        TAG_SHORT="BakaSU"
     fi
 
     # Compatibility adjustments for SuSFS
@@ -307,16 +312,14 @@ EOF
 
 sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
-KSU_TAG="NoKSU"
-if [ "$ENABLE_KSU" -eq 1 ]; then
-    if [ "$KSU_VARIANT" = "custom" ]; then
-        KSU_TAG="CustomSU-SuSFS-NoMount-WG"
-    else
-        KSU_TAG="BakaSU-SuSFS-NoMount-WG"
-    fi
-fi
+# Prepare direct package directory for artifact upload (prevents double zip on artifact download)
+PKG_DIR="../pkg_${TAG_SHORT}"
+rm -rf "${PKG_DIR}"
+mkdir -p "${PKG_DIR}"
+cp -r * "${PKG_DIR}/"
 
-ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"
+# Also generate direct standalone zip file named {nomor build}-CustomSU/BakaSU.zip
+ZIP_NAME="${BUILD_NUM}-${TAG_SHORT}"
 zip -r9 "../${ZIP_NAME}.zip" * -x .git README.md
 
 cd ..
@@ -324,4 +327,5 @@ rm -rf "${ANYKERNEL_DIR}"
 
 echo "==========================================="
 echo "[+] Flashable ZIP created: ${ZIP_NAME}.zip"
+echo "[+] Direct package directory prepared at: ${PKG_DIR}"
 echo "==========================================="
