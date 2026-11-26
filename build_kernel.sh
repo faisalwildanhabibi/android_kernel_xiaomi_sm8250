@@ -8,8 +8,8 @@ set -eo pipefail
 # ==========================================
 if [ -z "$1" ]; then
     echo "[!] Error: No device specified."
-    echo "Usage: $0 <device_name> [ksu] [aosp]"
-    echo "Example: $0 alioth ksu aosp"
+    echo "Usage: $0 <device_name> [ksu] [aosp] [official|custom]"
+    echo "Example: $0 alioth ksu aosp official"
     exit 1
 fi
 
@@ -26,12 +26,15 @@ fi
 
 ENABLE_KSU=0
 TARGET_OS="aosp"
+KSU_VARIANT="official"
 
 shift
 for arg in "$@"; do
     case "$arg" in
         ksu) ENABLE_KSU=1 ;;
         aosp) TARGET_OS="aosp" ;;
+        official) KSU_VARIANT="official" ;;
+        custom) KSU_VARIANT="custom" ;;
     esac
 done
 
@@ -67,29 +70,51 @@ echo "[*] Checking Clang version..."
 clang --version || { echo "[!] Clang not found at ${TOOLCHAIN_BIN}. Please check the path."; exit 1; }
 
 # ==========================================
-# BakaSU, SuSFS & NoMount Setup
+# Root Solution, SuSFS & NoMount Setup
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    echo "==========================================="
-    echo " [*] Initializing BakaSU, SuSFS & NoMount Setup"
-    echo "==========================================="
-
-    # 1. Setup BakaSU
-    echo "[*] Downloading BakaSU setup script..."
-    KSU_SETUP_TMP=$(mktemp)
-    if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
-        echo "[+] BakaSU script retrieved successfully."
-        bash "$KSU_SETUP_TMP" main
-        rm -f "$KSU_SETUP_TMP"
-
-        # Compatibility adjustments for SuSFS
-        if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
-            sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
+    if [ "$KSU_VARIANT" = "custom" ]; then
+        echo "==========================================="
+        echo " [*] Initializing CustomSU (faisalwildanhabibi/BakaSU fork), SuSFS & NoMount Setup"
+        echo "==========================================="
+        echo "[*] Downloading CustomSU setup script..."
+        KSU_SETUP_TMP=$(mktemp)
+        if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/faisalwildanhabibi/BakaSU/custom/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+            echo "[+] CustomSU script retrieved successfully."
+            KSU_REPO="https://github.com/faisalwildanhabibi/BakaSU" bash "$KSU_SETUP_TMP" custom/main
+            rm -f "$KSU_SETUP_TMP"
+        else
+            echo "[-] Failed to retrieve valid CustomSU setup script!"
+            rm -f "$KSU_SETUP_TMP"
+            exit 1
         fi
+        KSU_TAG="CustomSU-SuSFS-NoMount-WG"
     else
-        echo "[-] Failed to retrieve valid BakaSU setup script!"
-        rm -f "$KSU_SETUP_TMP"
-        exit 1
+        echo "==========================================="
+        echo " [*] Initializing Official BakaSU (Baka-SU/BakaSU), SuSFS & NoMount Setup"
+        echo "==========================================="
+        echo "[*] Downloading BakaSU setup script..."
+        KSU_SETUP_TMP=$(mktemp)
+        if curl -LSs -o "$KSU_SETUP_TMP" "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" && [ -s "$KSU_SETUP_TMP" ]; then
+            echo "[+] BakaSU script retrieved successfully."
+            bash "$KSU_SETUP_TMP" main
+            rm -f "$KSU_SETUP_TMP"
+        else
+            echo "[-] Failed to retrieve valid BakaSU setup script!"
+            rm -f "$KSU_SETUP_TMP"
+            exit 1
+        fi
+        KSU_TAG="BakaSU-SuSFS-NoMount-WG"
+    fi
+
+    # Compatibility adjustments for SuSFS
+    if [ -f "KernelSU/kernel/tools/susfs_compat.mk" ]; then
+        sed -i '/Please wait susfs update/d' KernelSU/kernel/tools/susfs_compat.mk
+    fi
+
+    # Remove orphan vfs_hide references in init.c if present
+    if [ -f "KernelSU/kernel/core/init.c" ]; then
+        sed -i '/vfs_hide/d' KernelSU/kernel/core/init.c
     fi
 
     # 2. Apply SuSFS 4.19 Kernel Patch
@@ -141,7 +166,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
         rm -rf "$WG_TMP"
     fi
 
-    echo "[+] BakaSU, SuSFS, NoMount & WireGuard setup finished."
+    echo "[+] ${KSU_TAG} setup finished."
 fi
 
 # ==========================================
@@ -201,11 +226,15 @@ scripts/config --file "${OUT_DIR}/.config" \
 # Root, SuSFS & NoMount Configurations
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    echo "[*] Injecting BakaSU, SuSFS & NoMount configurations..."
+    echo "[*] Injecting ${KSU_TAG} configurations..."
     scripts/config --file "${OUT_DIR}/.config" \
         -e KSU \
         -e KSU_SUSFS \
         -e NOMOUNT
+    if [ "$KSU_VARIANT" = "custom" ]; then
+        scripts/config --file "${OUT_DIR}/.config" \
+            -d KSU_PERSISTENT_ADB
+    fi
 fi
 
 make "${MAKE_OPTS[@]}" olddefconfig
@@ -280,7 +309,11 @@ sed -i "s/device.name1=.*/device.name1=${DEVICE_NAME}/" anykernel.sh
 
 KSU_TAG="NoKSU"
 if [ "$ENABLE_KSU" -eq 1 ]; then
-    KSU_TAG="BakaSU-SuSFS-NoMount-WG"
+    if [ "$KSU_VARIANT" = "custom" ]; then
+        KSU_TAG="CustomSU-SuSFS-NoMount-WG"
+    else
+        KSU_TAG="BakaSU-SuSFS-NoMount-WG"
+    fi
 fi
 
 ZIP_NAME="Kernel-${DEVICE_NAME}-${TARGET_OS}-${KSU_TAG}-$(date +%Y%m%d_%H%M%S)"

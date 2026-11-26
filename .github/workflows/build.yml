@@ -17,7 +17,7 @@ on:
         default: 'aosp'
   push:
     branches:
-      - 'seventeen-bakasu-susfs'
+      - 'seventeen-custom'
     paths:
       - 'build_kernel.sh'
       - 'patches/**'
@@ -30,10 +30,23 @@ on:
       - 'security/**'
       - '.github/workflows/build.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build-kernel:
-    name: "Build Kernel (alioth)"
+    name: "Build Kernel (${{ matrix.variant_name }})"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: official
+            variant_name: "BakaSU Official"
+            tag_name: "BakaSU-SuSFS-NoMount-WG"
+          - variant: custom
+            variant_name: "BakaSU CustomSU"
+            tag_name: "CustomSU-SuSFS-NoMount-WG"
 
     steps:
     - name: "Checkout Repository"
@@ -52,9 +65,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ccache_mikernel
-        key: ${{ runner.os }}-kernel-ccache-alioth-${{ github.run_id }}
+        key: ${{ runner.os }}-kernel-ccache-${{ matrix.variant }}-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-kernel-ccache-alioth-
+          ${{ runner.os }}-kernel-ccache-${{ matrix.variant }}-
           ${{ runner.os }}-kernel-ccache-
 
     - name: "Cache zyc-clang 16 Toolchain"
@@ -83,20 +96,16 @@ jobs:
         sed -i 's/\r$//' build_kernel.sh
         chmod +x build_kernel.sh
 
-        DEV="${{ github.event.inputs.device }}"
-        [ -z "$DEV" ] && DEV="alioth"
-
-        KSU_FLAG="${{ github.event.inputs.ksu }}"
-        [ -z "$KSU_FLAG" ] && KSU_FLAG="true"
-
-        OS_FLAG="${{ github.event.inputs.target_os }}"
-        [ -z "$OS_FLAG" ] && OS_FLAG="aosp"
+        DEV="${{ github.event.inputs.device || 'alioth' }}"
+        KSU_FLAG="${{ github.event.inputs.ksu || 'true' }}"
+        OS_FLAG="${{ github.event.inputs.target_os || 'aosp' }}"
+        VARIANT="${{ matrix.variant }}"
 
         ARGS="$DEV"
         if [ "$KSU_FLAG" = "true" ]; then
           ARGS="$ARGS ksu"
         fi
-        ARGS="$ARGS $OS_FLAG"
+        ARGS="$ARGS $OS_FLAG $VARIANT"
 
         echo "Executing: ./build_kernel.sh $ARGS"
         ./build_kernel.sh $ARGS
@@ -104,18 +113,51 @@ jobs:
     - name: "Generate Cryptographic Checksum"
       run: |
         sha256sum Kernel-*.zip > SHA256SUMS
-        echo "### Cryptographic Release Integrity" >> $GITHUB_STEP_SUMMARY
+        echo "### Cryptographic Release Integrity (${{ matrix.variant_name }})" >> $GITHUB_STEP_SUMMARY
         echo "| Artifact | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
         echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
         while read -r sum file; do
           echo "| \`$file\` | \`$sum\` |" >> $GITHUB_STEP_SUMMARY
         done < SHA256SUMS
 
-    - name: "Upload Flashable ZIP & Checksums"
+    - name: "Upload Flashable ZIP & Checksums (Artifact Backup)"
       uses: actions/upload-artifact@v4
       with:
-        name: Kernel-${{ github.event.inputs.device || 'alioth' }}-BakaSU-SuSFS-NoMount-WG-${{ github.run_id }}
+        name: Kernel-${{ github.event.inputs.device || 'alioth' }}-${{ matrix.tag_name }}-${{ github.run_id }}
         path: |
           Kernel-*.zip
           SHA256SUMS
         compression-level: 0
+
+  publish-release:
+    name: "Publish Flashable Releases"
+    needs: build-kernel
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Download All Artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          path: release_assets
+          merge-multiple: true
+
+      - name: "Create GitHub Release & Upload Direct Assets"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}-alioth
+          name: "Kernel alioth Release #${{ github.run_number }}"
+          body: |
+            ### Automated Flashable Kernel Release for POCO F3 (alioth)
+            - **Branch**: `seventeen-custom`
+            - **Workflow Run**: [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - **Commit**: `${{ github.sha }}`
+            
+            Unduh langsung berkas ZIP di bawah ini (1-klik flashable tanpa ekstraksi pembungkus ganda):
+            - `Kernel-alioth-*-BakaSU-*.zip` (Varian BakaSU Resmi)
+            - `Kernel-alioth-*-CustomSU-*.zip` (Varian BakaSU CustomSU)
+          files: |
+            release_assets/Kernel-*.zip
+            release_assets/SHA256SUMS
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
