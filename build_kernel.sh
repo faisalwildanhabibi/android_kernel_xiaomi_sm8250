@@ -27,7 +27,7 @@ fi
 ENABLE_KSU=0
 TARGET_OS="aosp"
 KSU_VARIANT="official"
-BUILD_NUM="${BUILD_NUMBER:-199}"
+BUILD_NUM="${BUILD_NUMBER:-1}"
 
 shift
 for arg in "$@"; do

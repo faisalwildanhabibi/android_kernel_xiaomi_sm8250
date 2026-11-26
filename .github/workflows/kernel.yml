@@ -1,12 +1,13 @@
 name: Build Kernel
+run-name: "#${{ inputs.build_number || github.run_number }} - Build Kernel (${{ github.ref_name }})"
 
 on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: 'Nomor Build (Kosongkan untuk menggunakan default env.BUILD_NUMBER)'
+        description: 'Nomor Build (Kosongkan untuk otomatis mengikuti nomor run workflow)'
         required: false
-        default: '199'
+        default: ''
       device:
         description: 'Target Device Code'
         required: false
@@ -32,13 +33,10 @@ on:
       - 'drivers/**'
       - 'net/**'
       - 'security/**'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/kernel.yml'
 
 permissions:
   contents: write
-
-env:
-  BUILD_NUMBER: 199 # Nomor build acuan (dapat diubah bebas di sini kapan pun diinginkan)
 
 jobs:
   build-kernel:
@@ -72,7 +70,7 @@ jobs:
       run: |
         BN="${{ github.event.inputs.build_number }}"
         if [ -z "$BN" ]; then
-          BN="${{ env.BUILD_NUMBER }}"
+          BN="${{ github.run_number }}"
         fi
         echo "EFFECTIVE_BUILD_NUM=${BN}" >> $GITHUB_ENV
 
@@ -142,7 +140,7 @@ jobs:
         run: |
           BN="${{ github.event.inputs.build_number }}"
           if [ -z "$BN" ]; then
-            BN="${{ env.BUILD_NUMBER }}"
+            BN="${{ github.run_number }}"
           fi
           echo "EFFECTIVE_BUILD_NUM=${BN}" >> $GITHUB_ENV
 
