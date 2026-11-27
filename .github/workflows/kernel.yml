@@ -1,11 +1,11 @@
 name: Build Kernel
-run-name: "#${{ inputs.build_number || github.run_number }} - Build Kernel (${{ github.ref_name }})"
+run-name: "#${{ inputs.build_number || env.BUILD_NUMBER || github.run_number }} - Build Kernel (${{ github.ref_name }})"
 
 on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: 'Nomor Build (Kosongkan untuk otomatis mengikuti nomor run workflow)'
+        description: 'Nomor Build (Kosongkan untuk otomatis mengikuti nomor run workflow atau default)'
         required: false
         default: ''
       device:
@@ -38,6 +38,9 @@ on:
 permissions:
   contents: write
 
+env:
+  BUILD_NUMBER: 3 # Penomoran build kustom (diulang ke 3 sesuai permintaan pengguna)
+
 jobs:
   build-kernel:
     name: "Build Kernel (${{ matrix.variant_name }})"
@@ -69,6 +72,9 @@ jobs:
     - name: "Determine Effective Build Number"
       run: |
         BN="${{ github.event.inputs.build_number }}"
+        if [ -z "$BN" ]; then
+          BN="${{ env.BUILD_NUMBER }}"
+        fi
         if [ -z "$BN" ]; then
           BN="${{ github.run_number }}"
         fi
@@ -139,6 +145,9 @@ jobs:
       - name: "Determine Effective Build Number"
         run: |
           BN="${{ github.event.inputs.build_number }}"
+          if [ -z "$BN" ]; then
+            BN="${{ env.BUILD_NUMBER }}"
+          fi
           if [ -z "$BN" ]; then
             BN="${{ github.run_number }}"
           fi
