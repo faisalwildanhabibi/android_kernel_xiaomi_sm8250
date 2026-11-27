@@ -242,6 +242,7 @@ if [ "$ENABLE_KSU" -eq 1 ]; then
     fi
 fi
 
+: > .scmversion
 make "${MAKE_OPTS[@]}" olddefconfig
 
 echo "==========================================="
