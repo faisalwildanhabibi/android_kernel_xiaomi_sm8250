@@ -1,5 +1,5 @@
 name: Build Kernel
-run-name: "#${{ inputs.build_number || env.BUILD_NUMBER || github.run_number }} - Build Kernel (${{ github.ref_name }})"
+run-name: "#${{ inputs.build_number || '3' }} - Build Kernel (${{ github.ref_name }})"
 
 on:
   workflow_dispatch:
